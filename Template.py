@@ -1,4 +1,5 @@
 from ClyphX_Pro.clyphx_pro.UserActionsBase import UserActionsBase
+from template.TemplateBase import TemplateBase
 
 """ The number of X-Controls to add shift functionality to. """
 NUM_X_CONTROLS = 100
@@ -6,27 +7,6 @@ NUM_X_CONTROLS = 100
 
 class Template(UserActionsBase):
     """
-    ShiftAction creates an action named shift that shifts macro assignments between
-    a default and shifted layer for use in creating shift functionality for X-Controls.
-    
-    The X-Control to use as a shift button should look something like this:
-    shift_button = note, 1, 98, 0, 127, shift on : shift off
-
-    So, shift_button will trigger shift on when pressed and shift off when released.
-    
-    Each X-Control to add shift functionality to should look something like this:
-    b1 = note, 1, 0, 0, 127, $b1$
-    
-    So, b1 will trigger the macro named $b1$.
-    
-    Macros should be of the following form for each X-Control:
-    $b1_default$ = mute
-    $b1_shifted$ = solo
-    $b1$ = $b1_default$
-    
-    So, $b1$ will be assigned to $b1_default$ by default and $b1_shifted$ when
-    shift_button is held down.
-
         # def on_selected_track_changed(self):
     #     # trigger = self.canonical_parent.clyphx_pro_component.trigger_action_list
     #     track = self.song().selected_track
@@ -40,14 +20,26 @@ class Template(UserActionsBase):
 
     """
 
+    def __init__(self, cx_core, *a, **k):
+        super(Template, self).__init__(cx_core, *a, **k)
+        self.val = 42
+
     def create_actions(self):
         """ Create the action.  We define it as a global action since it's not specific
         to a track, device or clip. """
         self.add_global_action('tpl', self.handler)
+        self.add_global_action('check', self.check)
 
     def handler(self, _, args):
         trigger = self.canonical_parent.clyphx_pro_component.trigger_action_list
-        trigger("SEL/MUTE;")
+        trigger("wait 10; MSG \"yay user action\";")
         count = 1
+        tpl = TemplateBase(trigger)
+        tpl.handler(self.val)
+        # tpl.handler(self, trigger)
         self.canonical_parent.log_message('Count: %s' % count)
-        self.canonical_parent.show_message('Count: %s' % count)
+        # self.canonical_parent.show_message('Count: %s' % count)
+    def check(self, _, args):
+        # trigger = self.canonical_parent.clyphx_pro_component.trigger_action_list
+        # trigger('MSG "yay user action"')
+        self.canonical_parent.show_message('CHECK')
