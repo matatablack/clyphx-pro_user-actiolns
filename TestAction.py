@@ -2,21 +2,22 @@ from ClyphX_Pro.clyphx_pro.UserActionsBase import UserActionsBase
 
 class TestAction(UserActionsBase):
 
-    def create_actions(self):
-        self.add_global_action('test_action', self.global_action_handler)
-        self.add_track_action('test_track', self.track_action_handler)
+    def __init__(self):
+        self.prev_track_name = "initial_value"
 
+    def create_actions(self):
+        self.add_global_action('dump', self.record_midi_to_audio)
 
     def record_midi_to_audio(self, action_def, args):
         track = action_def['track']
         track.arm.value = True
         self.canonical_parent.show_message('track name is')
 
+    """ def on_selected_track_changed(self):
+        # trigger = self.canonical_parent.clyphx_pro_component.trigger_action_list
+        track = self.song().selected_track
+        self.canonical_parent.show_message('new track name: %s' % track.name) """
 
-    def global_action_handler(self, action_def, args):
-        trigger = self.canonical_parent.clyphx_pro_component.trigger_action_list
-        self.canonical_parent.show_message('%s: Hello World' % args)
-        trigger('MSG global action triggered')
         
         # for i in device.parameters
         #     trigger( #how to write this )
