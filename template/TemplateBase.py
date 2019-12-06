@@ -11,3 +11,10 @@ class TemplateBase:
 
     def dispatch(self, args):
         self.log('%s handler exec and val:' % TPL_PREFIX)
+
+    def dump(self):
+        self.log('dump action start')
+
+    def set_selected_track(self, track):
+        self.log(track.name)
+

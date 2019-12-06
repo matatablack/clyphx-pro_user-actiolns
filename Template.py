@@ -24,7 +24,6 @@ class Template(UserActionsBase):
 
     def __init__(self, cx_core, *a, **k):
         super(Template, self).__init__(cx_core, *a, **k)
-        self.val = 43
         self.tpl.doInit(self)
 
     def create_actions(self):
@@ -35,17 +34,13 @@ class Template(UserActionsBase):
     def entryPointHandler(self, _, args):
         self.tpl.dispatch(args)
 
+    def on_selected_track_changed(self):
+        # self.tpl.set_selected_track(self.song().view.selected_track)
+        self.dumpall_cmd(self.song().view.selected_track)
 
-
-    def dumpall_cmd(self, _, args):
+    def dumpall_cmd(self, obj):
         txt = ''
-        # txt += '\n' + self._dumpobj(self.song(), True)
-        # txt += '\n' + self._dumpobj(self.song().view, True)
-        # txt += '\n' + self._dumpobj(self.song().tracks, True)
-        txt += '\n' + self._dumpobj(self.song().tracks[0], False)
-        txt += '\n' + self._dumpobj(self.song().tracks[1].view.selected_device, True)
-        txt += '\n' + self._dumpobj(self.song().tracks[1].view.selected_device.view, True)
-        txt += '\n' + self._dumpobj(self.song().tracks[1].view.selected_device.parameters, True)
+        txt += '\n' + self._dumpobj(obj, False)
         self.canonical_parent.log_message(txt)
 
     def dumptree_cmd(self, _, args):
