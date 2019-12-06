@@ -1,11 +1,13 @@
-""" The number of X-Controls to add shift functionality to. """
-NUM_X_CONTROLS = 100
+TPL_PREFIX = "tpl"
+
 
 
 class TemplateBase:
+    
 
-    def __init__(self, trigger):
-        self.trigger = trigger
+    def doInit(self, live):
+        self.log = live.canonical_parent.log_message
+        # self.trigger = live.canonical_parent.clyphx_pro_component.trigger_action_list
 
-    def handler(self, val):
-        self.trigger("wait 15; MSG \"HOLA %s\";" % val)
+    def dispatch(self, args):
+        self.log('%s handler exec and val:' % TPL_PREFIX)
