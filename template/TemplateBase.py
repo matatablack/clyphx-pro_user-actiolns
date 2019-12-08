@@ -1,8 +1,11 @@
 from utils.log_utils import dumpobj,str2bool
-import threading
+from utils.getters import get_quantization_number_value
+
+#tail log: tail -f -n100 "/Users/matata/Library/Preferences/Ableton/Live 10.1/Log.txt"
 
 class TemplateBase:
-    
+
+    debug_mode = False
     _target_clip = None
     _target_track = None
     current_action_exec = None
@@ -19,21 +22,45 @@ class TemplateBase:
 
     def dump(self):
         try:
-            self._init_func('dump')
+            self._init_func('dump', debug=True)
             source_clip = self._get_clip()
             source_track = source_clip.canonical_parent.canonical_parent
+            t = self.trigger
             def on_target_selection():
-                target_track = self._get_track(self.current_action_targets[0].name)
-                self.log('SOURCE CLIP NAME: %s' % source_clip.name)
-                self.log('TARGET TRACK: %s' % target_track.name)
-                self.log('INPUT ROUTING %s' % target_track.current_input_routing)
+                target_track = self.current_action_targets[0]
+                if not target_track: return self._stop_action_exec('Target track not found')
+
+                #generate id. Write in clip name and snapshot 
+                #todo -> check if already has an id
+                dump_id = "my_clip_id"
+                source_clip.name = source_clip.name + ' <%s>' % dump_id
+                current_quantization = get_quantization_number_value(self)
+
+                d = { 
+                    'target': target_track.name,
+                    'source': source_track.name,
+                    'length': source_clip.length / 4,
+                    'wait_time': source_clip.length / 4 + current_quantization,
+                    'clip': source_clip.name
+                }
                 # -> preserve state of things im changing (snap actions?)
+                # set input source and arm
+                
+                actions = ''' 
+                    "{target}"/IN "{source}"; 
+                    "{target}"/ARM ON;
+                    "{source}"/STOP;
+                    SRECFIX {length};
+                    "{source}"/PLAY "{clip}";
+                    WAITS {wait_time}B;
+                    "{source}", "{target}"/ARM OFF;
+                    "{source}"/STOP NQ;
+                    "{target}"/MON AUTO;
+                    "{target}"/CLIP(SEL) NAME "{clip}"
+                '''.format(**d)
+                t(actions)
 
-                self.trigger('"%s"/IN "%s"; "Test"/ARM ON; "Gen"/MUTE;' % (target_track.name, source_track.name))
-                # self.trigger('"%s"/ARM ON' % (target_track.name))
-                # self.trigger('SRECFIX %s' % (source_clip.length / 4))
-
-                self._clean_action_exec()
+                self._stop_action_exec()
                 
 
 
@@ -49,12 +76,13 @@ class TemplateBase:
             track = self.live.song().view.selected_track
             if self.current_action_is_waiting_for_targets:
                 self.current_action_targets.append(track)
-                self.continue_execution()
+                self.live.canonical_parent.schedule_message(2, self.continue_execution)
         except BaseException as e:
             self.log('ERROR: ' + str(e))
 
     def on_selected_scene_changed(self):
-        self.log('selected scene changed')
+        # self.log('selected scene changed')
+        pass
         
     #track utils
     def set_target_track(self, track):
@@ -66,16 +94,12 @@ class TemplateBase:
     def _get_track(self, track_name = False):
         target = 'SEL' if not track_name else '"%s"' % track_name
         self.trigger('%s/get_track' % target)
-        # self.log('selected track name: %s' % getattr(self._target_track, "name", "No target track"))
         return self._target_track
 
 
     #clip utils
     def set_target_clip(self, clip):
-        if clip:
-            self._target_clip = clip
-        else:
-            self._target_clip = None
+       self._target_clip = clip if clip else None
 
 
     def _get_detail_clip(self):
@@ -87,21 +111,26 @@ class TemplateBase:
         return self._target_clip
 
      #action utils
-    def _init_func(self, action_name):
+    def _init_func(self, action_name, debug=False):
         if self._is_executing_other_action(action_name): pass
+        self.debug_mode = True
         self.current_action_exec = action_name
-        return self._clean_action_exec
+        return self._stop_action_exec
 
-    def _clean_action_exec(self):
-        self.current_action_exec = None
+    def _stop_action_exec(self, exception = ''):
         self.current_action_is_waiting_for_targets = False
         self.current_action_targets = []
         self.continue_execution = None
-        self.log('Finished %s action execution' % self.current_action_exec)
+        if exception != '':
+            self.log('STOP %s EXEC: %s' % (self.current_action_exec, exception))
+        else:
+            self.log('Finished %s action execution' % self.current_action_exec)
+        self.log('\n\n\n\n')
+        self.current_action_exec = None
 
     def _is_executing_other_action(self, action_name = ''):
         if self.current_action_exec != None:
-            self.log('Attempted to call %s while %s was executing' % (action_name, self.current_action_exec))
+            self.log('WARNING: Attempted to call %s while %s was executing' % (action_name, self.current_action_exec))
             return True
         else:
             return False
@@ -114,7 +143,8 @@ class TemplateBase:
     def dispatch(self, args, trigger):
         def trig_and_log(action):
                 trigger(action)
-                self.log('TRIGGER %s' % action)
+                if self.debug_mode:
+                    self.log('TRIGGER %s' % action)
         self.trigger = trig_and_log
         if not args:
             self.log('Dispatch called without method name')
