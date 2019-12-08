@@ -11,16 +11,15 @@ class Template(UserActionsBase):
 
     def create_actions(self):
         self.add_global_action('tpl', self.entry_point_handler)
-        self.add_clip_action('get_detail_clip', self.set_detail_clip)
+        self.add_clip_action('get_clip', self.set_clip)
 
     def entry_point_handler(self, _, args):
         trigger = self.canonical_parent.clyphx_pro_component.trigger_action_list
         self.tpl.dispatch(args, trigger)
 
-    def set_detail_clip(self, action_def, args):
+    def set_clip(self, action_def, args):
         clip = action_def['clip']
-        if clip:
-            self.tpl.set_detail_clip(clip)
+        self.tpl.set_clip(clip)
 
     def on_selected_track_changed(self):
         self.tpl.set_selected_track(self.song().view.selected_track)

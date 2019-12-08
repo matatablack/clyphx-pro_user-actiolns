@@ -3,7 +3,7 @@ from utils.log_utils import dumpobj,str2bool
 class TemplateBase:
     
     _prev_track_helper = []
-    _detail_clip = None
+    _selected_clip = None
 
     def _do_init(self, live):
         self.log = live.canonical_parent.log_message
@@ -12,7 +12,7 @@ class TemplateBase:
 
     def dump(self):
         self.log('dump action start')
-        self._get_detail_clip()
+        self._get_clip()
         # self.trigger('"Production"/SEL')
         
     #track utils
@@ -33,18 +33,20 @@ class TemplateBase:
 
 
     #clip utils
-    def set_detail_clip(self, clip):
-        self._detail_clip = clip
-
-    
-    def _get_detail_clip(self):
-        self.trigger("user_clip(DETAIL) get_detail_clip") #ojo con esto, puede que trigger este definido porque se define en dispatch
-        if self._detail_clip: 
-            self.log(self._detail_clip.name)
-            return self._detail_clip
+    def set_clip(self, clip):
+        if clip:
+            self._selected_clip = clip
         else:
-            self._detail_clip = None
-            return None
+            self._selected_clip = None
+
+
+    def _get_detail_clip(self):
+        return self._get_clip('DETAIL')
+    
+    def _get_clip(self, target = 'SEL'):
+        self.trigger("user_clip(%s) get_clip" % target) #ojo con esto, puede que trigger este definido porque se define en dispatch
+        self.log('selected clip name: %s' % getattr(self._selected_clip, "name", "No clip selected"))
+        return self._selected_clip
 
     #general
     def dispatch(self, args, trigger):
