@@ -27,4 +27,8 @@ class Template(UserActionsBase):
         self.tpl.set_target_track(track)
 
     def on_selected_track_changed(self):
-        self.tpl.set_selected_track(self.song().view.selected_track)
+        self.tpl.on_selected_track_changed()
+        self.tpl.set_trigger(self.canonical_parent.clyphx_pro_component.trigger_action_list)
+    
+    def on_selected_scene_changed(self):
+        self.tpl.on_selected_scene_changed()
