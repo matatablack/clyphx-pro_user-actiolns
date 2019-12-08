@@ -35,3 +35,6 @@ def dumpobj(obj, show_callables=False):
         txt += '  {} = {}\n'.format(member_desc.ljust(max_desc_len), member)
 
     return txt
+
+def str2bool(v):
+    return v.lower() in ("yes", "true", "t", "1")
