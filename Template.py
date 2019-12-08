@@ -49,7 +49,7 @@ class Template(UserActionsBase):
             track = self.song().view.selected_track
             if self.current_action_is_waiting_for_targets:
                 self.current_action_targets.append(track)
-                self.continue_execution()
+                self.canonical_parent.schedule_message(2, self.continue_execution)
         except BaseException as e:
             self.log('ERROR: ' + str(e))
     
@@ -119,7 +119,6 @@ class Template(UserActionsBase):
         self.collect_targets(self.on_target_selection)
             
     def on_target_selection(self):
-        self.song().tracks[2].arm = True
         try:
             source_clip = self.current_action_targets[0]
             source_track = source_clip.canonical_parent.canonical_parent
@@ -128,6 +127,7 @@ class Template(UserActionsBase):
             self.log('SOURCE CLIP NAME: %s' % source_clip.name)
             self.log('TARGET TRACK: %s' % target_track.name)
             self.log('INPUT ROUTING %s' % target_track.current_input_routing)
+            self.song().tracks[2].arm = True
             # -> preserve state of things im changing (snap actions?)
             # self.trigger('"%s"/IN "%s"; "Test"/ARM ON; "Gen"/MUTE;' % (target_track.name, source_track.name))
             # self.trigger('"%s"/ARM ON' % (target_track.name))
