@@ -1,5 +1,6 @@
 from utils.log_utils import dumpobj,str2bool
-from utils.getters import get_quantization_number_value
+from utils.getters import get_quantization_number_value,get_clip_id,generate_id
+import uuid
 
 #tail log: tail -f -n100 "/Users/matata/Library/Preferences/Ableton/Live 10.1/Log.txt"
 
@@ -25,28 +26,27 @@ class TemplateBase:
             self._init_func('dump', debug=True)
             source_clip = self._get_clip()
             source_track = source_clip.canonical_parent.canonical_parent
-            t = self.trigger
             def on_target_selection():
                 target_track = self.current_action_targets[0]
                 if not target_track: return self._stop_action_exec('Target track not found')
 
                 #generate id. Write in clip name and snapshot 
-                #todo -> check if already has an id
-                dump_id = "my_clip_id"
-                source_clip.name = source_clip.name + ' <%s>' % dump_id
-                current_quantization = get_quantization_number_value(self)
+                clip_id = get_clip_id(source_clip.name)
+                dump_id = clip_id if clip_id else generate_id()
+                if not clip_id:
+                    source_clip.name = source_clip.name + '   [%s]' % dump_id
 
                 d = { 
                     'target': target_track.name,
                     'source': source_track.name,
                     'length': source_clip.length / 4,
-                    'wait_time': source_clip.length / 4 + current_quantization,
-                    'clip': source_clip.name
+                    'wait_time': source_clip.length / 4 + get_quantization_number_value(self),
+                    'clip': source_clip.name,
+                    'dump_id': dump_id
                 }
-                # -> preserve state of things im changing (snap actions?)
-                # set input source and arm
-                
-                actions = ''' 
+                # -> preserve state of things im changing (snap actions?)             
+                actions = '''
+                    [{dump_id}] "{source}"/SNAP;
                     "{target}"/IN "{source}"; 
                     "{target}"/ARM ON;
                     "{source}"/STOP;
@@ -58,15 +58,35 @@ class TemplateBase:
                     "{target}"/MON AUTO;
                     "{target}"/CLIP(SEL) NAME "{clip}"
                 '''.format(**d)
-                t(actions)
 
+                self.trigger(actions)
                 self._stop_action_exec()
-                
-
 
             self.collect_targets(on_target_selection)
         except BaseException as e:
             self.log('ERROR: ' + str(e))
+
+    def control(self):
+        try:
+            self._init_func('control', debug=True)
+            """ 
+                stop play, remember if playing and  arrangement locator (common?)
+                arm (snap all others?) (common)
+
+
+            """
+            source_clip = self._get_clip()
+            source_track = source_clip.canonical_parent.canonical_parent
+
+            clip_id = get_clip_id(source_clip.name)
+                    
+            self.trigger("recallsnap %s" % clip_id)
+
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    
 
 
             
@@ -75,6 +95,7 @@ class TemplateBase:
         try:
             track = self.live.song().view.selected_track
             if self.current_action_is_waiting_for_targets:
+                #todo => and self.current_action_targets_def para saber si es trakc clip device o que
                 self.current_action_targets.append(track)
                 self.live.canonical_parent.schedule_message(2, self.continue_execution)
         except BaseException as e:
