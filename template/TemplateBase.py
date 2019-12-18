@@ -1,5 +1,6 @@
 from utils.log_utils import dumpobj,str2bool
 from utils.getters import get_quantization_number_value,get_clip_id,generate_id
+from MidiFighter import MidiFighter
 import uuid
 
 #tail log: tail -f -n100 "/Users/matata/Library/Preferences/Ableton/Live 10.1/Log.txt"
@@ -14,6 +15,8 @@ class TemplateBase:
     current_action_targets = []
     continue_execution = None
     # are_targets_available = threading.Event()
+
+    mf = MidiFighter()
     
 
     def _do_init(self, live):
@@ -86,8 +89,11 @@ class TemplateBase:
         except BaseException as e:
             self.log('ERROR: ' + str(e))
 
-    
+    def bind(self):
+        self.mf.change_bank()
 
+    
+    
 
             
 
@@ -116,6 +122,9 @@ class TemplateBase:
         target = 'SEL' if not track_name else '"%s"' % track_name
         self.trigger('%s/get_track' % target)
         return self._target_track
+
+        #[] OSC STR /track/name "testing!"
+        #[] OSC int /k4/value 100
 
 
     #clip utils
@@ -167,6 +176,7 @@ class TemplateBase:
                 if self.debug_mode:
                     self.log('TRIGGER %s' % action)
         self.trigger = trig_and_log
+        self.mf._do_init(self.live, self.trigger)
         if not args:
             self.log('Dispatch called without method name')
         else:

@@ -11,12 +11,12 @@ class Template(UserActionsBase):
         self.tpl._do_init(self)
 
     def create_actions(self):
-        self.add_global_action('tpl', self.entry_point_handler)
+        self.add_global_action('tpl', self.dispatch)
         self.add_clip_action('get_clip', self.get_clip)
         self.add_track_action('get_track', self.get_track)
         self.add_global_action('recallsnap', self.recallsnap)
 
-    def entry_point_handler(self, _, args):
+    def dispatch(self, _, args):
         trigger = self.canonical_parent.clyphx_pro_component.trigger_action_list
         self.tpl.dispatch(args, trigger)
 

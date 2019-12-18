@@ -1,5 +1,6 @@
 from ClyphX_Pro.clyphx_pro.ParseUtils import parse_number
 from ClyphX_Pro.clyphx_pro.UserActionsBase import UserActionsBase
+from template.utils.log_utils import dumpobj
 
 
 class OSCActions(UserActionsBase):
@@ -18,8 +19,12 @@ class OSCActions(UserActionsBase):
         self.add_global_action('osc', self._send_osc_message)
 
     def _do_init(self, cx_core):
-        # need to use scheduling here as user actions are created before the OSC server.
-        self._server = cx_core.osc_server
+        try:
+            # need to use scheduling here as user actions are created before the OSC server.
+            self._server = cx_core.osc_server
+            # self.canonical_parent.log_message(dumpobj(self._server))
+        except BaseException as e:
+            self.canonical_parent.log_message('ERROR: ' + str(e))
 
     def _send_osc_message(self, _, args):
         if self._server and args:
