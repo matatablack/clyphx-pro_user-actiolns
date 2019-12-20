@@ -25,6 +25,12 @@ class TemplateBase:
 
 
     def dump(self):
+        """
+            @over clip
+            @targets: [track / clipSlot]
+            Resample clip in target. 
+            Takes an snapshot and write snapshot id into both clip names. 
+        """
         try:
             self._init_func('dump', debug=True)
             source_clip = self._get_clip()
@@ -70,19 +76,15 @@ class TemplateBase:
             self.log('ERROR: ' + str(e))
 
     def control(self):
+        """
+            @over clip
+            Recall snapshot if clip has id.
+        """
         try:
             self._init_func('control', debug=True)
-            """ 
-                stop play, remember if playing and  arrangement locator (common?)
-                arm (snap all others?) (common)
 
-
-            """
             source_clip = self._get_clip()
-            source_track = source_clip.canonical_parent.canonical_parent
-
-            clip_id = get_clip_id(source_clip.name)
-                    
+            clip_id = get_clip_id(source_clip.name)                    
             self.trigger("recallsnap %s" % clip_id)
 
             self._stop_action_exec()
@@ -90,10 +92,15 @@ class TemplateBase:
             self.log('ERROR: ' + str(e))
 
     def bind(self):
-        self.mf.change_bank()
+        self.mf.bind()
+
+    def change_bank(self, bank):
+        self.mf.change_bank(bank)
 
     
-    
+    def list_device_parameters(self):
+        track = self.live.song().view.selected_track
+        self.log_obj(track)
 
             
 

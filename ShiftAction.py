@@ -34,20 +34,15 @@ class ShiftAction(UserActionsBase):
         self.add_global_action('shift', self._handle_shift)
 
     def _handle_shift(self, _, args):
-        """ This is the code that handles shifting the macro assignments.  Super simple,
-        but let's go through it line by line. """
+        trigger = self.canonical_parent.clyphx_pro_component.trigger_action_list
+        log = self.canonical_parent.clyphx_pro_component.log_message
 
-        # fnc is the function we use for triggering action lists.
-        fnc = self.canonical_parent.clyphx_pro_component.trigger_action_list
+        splitedArgs = args.split()
+        prefix = splitedArgs[0]
+        state = splitedArgs[1]
+        
+        footer = 'shifted' if state and state == 'on' else 'default'
 
-        # footer is the last part of the macro name we want to use - shifted when
-        # shift on is called and default when shift off is called.
-        footer = 'shifted' if args and args == 'on' else 'default'
-
-        # trigger NUM_X_CONTROLS action lists
         for i in xrange(1, NUM_X_CONTROLS):
-
-            # generate the action list, which is just a macro assignment in this case
-            # the result that will be passed to fnc will look something like this:
-            # $b1$=$b1_shifted$ or $b1$=$b1_default$
-            fnc('$b%s$=$b%s_%s$' % (i, i, footer))
+            res = '${prefix}_{index}$=${prefix}_{index}_{footer}$'.format(prefix=prefix, index=i, footer=footer)
+            trigger(res)
