@@ -1,6 +1,7 @@
 import re
 import random
 import string
+import log_utils as log
 
 def generate_id():
     return ''.join([random.choice(string.ascii_letters+string.digits+'-_') for ch in range(8)])
@@ -18,3 +19,11 @@ def get_quantization_number_value(self):
 def get_clip_id(s):
     search = re.search(r'\[(.*?)\]',s)
     return search.group(1) if search else None
+
+def selected_device(self, log = False):
+    dev = self.live.song().view.selected_track.view.selected_device
+    if log:
+        log.obj(dev)
+    return dev
+
+

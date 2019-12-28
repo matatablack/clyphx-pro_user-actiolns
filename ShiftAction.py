@@ -42,7 +42,6 @@ class ShiftAction(UserActionsBase):
         state = splitedArgs[1]
         
         footer = 'shifted' if state and state == 'on' else 'default'
-
         for i in xrange(1, NUM_X_CONTROLS):
-            res = '${prefix}_{index}$=${prefix}_{index}_{footer}$'.format(prefix=prefix, index=i, footer=footer)
+            res = '${prefix}{index}$=${prefix}{index}_{footer}$'.format(prefix=prefix, index=i, footer=footer)
             trigger(res)

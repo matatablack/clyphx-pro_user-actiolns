@@ -1,0 +1,1 @@
+drum_machine_names_mapping_array = ["Kick", "Snare", "CHH", "Perc"]

@@ -1,7 +1,9 @@
-from utils.log_utils import dumpobj,str2bool
-from utils.getters import get_quantization_number_value,get_clip_id,generate_id
-from MidiFighter import MidiFighter
+# from utils.log_utils import dumpobj,str2bool,selected_device
+import utils.log_utils as log
 import uuid
+from utils.getters import get_quantization_number_value,get_clip_id,generate_id,selected_device
+from utils.defs import drum_machine_names_mapping_array
+from MidiFighter import MidiFighter
 
 #tail log: tail -f -n100 "/Users/matata/Library/Preferences/Ableton/Live 10.1/Log.txt"
 
@@ -97,11 +99,36 @@ class TemplateBase:
     def change_bank(self, bank):
         self.mf.change_bank(bank)
 
-    
-    def list_device_parameters(self):
-        track = self.live.song().view.selected_track
-        self.log_obj(track)
+    def drum_machine(self, slot):
+        try:
+            self._init_func('drum_machine', debug=True)
+            if drum_machine_names_mapping_array[int(slot)-1]:
+                name = drum_machine_names_mapping_array[int(slot)-1]
+                self.trigger('"{name}"/sel'.format(name=name))
+                self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
 
+    def hot_swap(self):
+        try:
+            if not self._init_func('hot_swap', debug=True):
+                return False
+            dev = selected_device(self)
+            log.obj(dev)
+            self.trigger('[snare] "Snare"/SNAP DEV(1)')
+            self.trigger('WAIT 1; "Snare"/DEV(1) SEL; WAIT 1; SWAP')
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    def continue_hot_swap(self, snap_name = "snare"):
+        try:
+            self.trigger("KEY ENTER; wait 2; SWAP; wait 4;")
+            self.trigger("wait 4; recallsnap %s" % snap_name)
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+           
             
 
     def on_selected_track_changed(self):
@@ -149,7 +176,7 @@ class TemplateBase:
 
      #action utils
     def _init_func(self, action_name, debug=False):
-        if self._is_executing_other_action(action_name): pass
+        if self._is_executing_other_action(action_name): return False
         self.debug_mode = True
         self.current_action_exec = action_name
         return self._stop_action_exec
@@ -197,7 +224,4 @@ class TemplateBase:
             else:
                 return method()
 
-    def log_obj(self, obj, show_callable = False):
-        should_show_callable = str2bool(show_callable) if isinstance(show_callable, str) else show_callable
-        self.log(dumpobj(obj, should_show_callable))
         
