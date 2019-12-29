@@ -1,7 +1,5 @@
-# from utils.log_utils import dumpobj,str2bool,selected_device
 import utils.log_utils as log
-import uuid
-from utils.getters import get_quantization_number_value,get_clip_id,generate_id,selected_device
+import utils.getters as get
 from utils.defs import drum_machine_names_mapping_array
 from MidiFighter import MidiFighter
 
@@ -42,8 +40,8 @@ class TemplateBase:
                 if not target_track: return self._stop_action_exec('Target track not found')
 
                 #generate id. Write in clip name and snapshot 
-                clip_id = get_clip_id(source_clip.name)
-                dump_id = clip_id if clip_id else generate_id()
+                clip_id = get.clip_id(source_clip.name)
+                dump_id = clip_id if clip_id else get.generate_id()
                 if not clip_id:
                     source_clip.name = source_clip.name + '   [%s]' % dump_id
 
@@ -51,7 +49,7 @@ class TemplateBase:
                     'target': target_track.name,
                     'source': source_track.name,
                     'length': source_clip.length / 4,
-                    'wait_time': source_clip.length / 4 + get_quantization_number_value(self),
+                    'wait_time': source_clip.length / 4 + get.quantization_number_value(self),
                     'clip': source_clip.name,
                     'dump_id': dump_id
                 }
@@ -86,7 +84,7 @@ class TemplateBase:
             self._init_func('control', debug=True)
 
             source_clip = self._get_clip()
-            clip_id = get_clip_id(source_clip.name)                    
+            clip_id = get.clip_id(source_clip.name)
             self.trigger("recallsnap %s" % clip_id)
 
             self._stop_action_exec()
@@ -113,8 +111,7 @@ class TemplateBase:
         try:
             if not self._init_func('hot_swap', debug=True):
                 return False
-            dev = selected_device(self)
-            log.obj(dev)
+            dev = get.selected_device(self)
             self.trigger('[snare] "Snare"/SNAP DEV(1)')
             self.trigger('WAIT 1; "Snare"/DEV(1) SEL; WAIT 1; SWAP')
         except BaseException as e:
@@ -126,9 +123,7 @@ class TemplateBase:
             self.trigger("wait 4; recallsnap %s" % snap_name)
             self._stop_action_exec()
         except BaseException as e:
-            self.log('ERROR: ' + str(e))
-
-           
+            self.log('ERROR: ' + str(e))           
             
 
     def on_selected_track_changed(self):

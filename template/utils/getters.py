@@ -6,7 +6,7 @@ import log_utils as log
 def generate_id():
     return ''.join([random.choice(string.ascii_letters+string.digits+'-_') for ch in range(8)])
 
-def get_quantization_number_value(self):
+def quantization_number_value(self):
     qt = self.live.song().clip_trigger_quantization
     dictionary = {
         'q_bar': 1,
@@ -16,7 +16,7 @@ def get_quantization_number_value(self):
     }
     return dictionary.get(str(qt))
 
-def get_clip_id(s):
+def clip_id(s):
     search = re.search(r'\[(.*?)\]',s)
     return search.group(1) if search else None
 
