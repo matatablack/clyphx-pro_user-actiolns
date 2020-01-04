@@ -1,6 +1,6 @@
 import utils.log_utils as log
 import utils.getters as get
-from utils.defs import drum_machine_names_mapping_array
+from utils.defs import drum_machine_names_mapping_array, control_modes_defs
 from MidiFighter import MidiFighter
 
 #tail log: tail -f -n100 "/Users/matata/Library/Preferences/Ableton/Live 10.1/Log.txt"
@@ -82,7 +82,6 @@ class TemplateBase:
         """
         try:
             self._init_func('control', debug=True)
-
             source_clip = self._get_clip()
             clip_id = get.clip_id(source_clip.name)
             self.trigger("recallsnap %s" % clip_id)
@@ -91,8 +90,29 @@ class TemplateBase:
         except BaseException as e:
             self.log('ERROR: ' + str(e))
 
-    def bind(self):
-        self.mf.bind()
+    def bind(self, control_mode_name):
+        try:
+            self._init_func('bind', debug=True)
+            if control_modes_defs[control_mode_name]:
+                self.trigger(control_modes_defs[control_mode_name]["binding"])
+                self.mf.set_color_schema(control_modes_defs[control_mode_name]["color_schema"])
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    current_view = "session"
+    def change_view(self):
+        try:
+            self._init_func('change_view', debug=True)
+            if self.current_view == "session":
+                self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD ON; "Production"/FOLD OFF')
+                self.current_view = "arrangement"
+            else:
+                self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD OFF; "Production"/FOLD ON')    
+                self.current_view = "session"
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
 
     def change_bank(self, bank):
         self.mf.change_bank(bank)
