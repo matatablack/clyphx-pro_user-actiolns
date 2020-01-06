@@ -75,11 +75,70 @@ class TemplateBase:
         except BaseException as e:
             self.log('ERROR: ' + str(e))
 
+    """
+        @over clip
+        Recall snapshot if clip has id.
+    """
+    def record_automation(self, rec_fix):
+        try:
+            self._init_func('record_automation', debug=True)
+
+            source_track = self.live.song().view.selected_track
+
+            snap_id = source_track.name + '_' + get.generate_id()
+
+            d = { 
+                'rec_fix': rec_fix,
+                'wait_time': int(rec_fix) + get.quantization_number_value(self),
+                'snap_id': snap_id,
+                'new_clip_name': "process [%s]" % snap_id
+            }
+
+            self.trigger('$select_process_chain$')
+            self.trigger('''WAIT 4; [{snap_id}] SEL/SNAP DEV(ALL.ALL);'''.format(**d))
+
+            actions = '''
+                WAIT 5;
+                ALL/ARM OFF;
+                SEL/ARM ON;
+                SEL/DEV("Gen") SEL;
+                tpl change_bank 1;
+                tpl bind default_binding;
+                WAIT 2;
+                SRECFIX {rec_fix};
+                WAITS {wait_time}B;
+                SEL/ARM OFF;
+                SEL/CLIP(SEL) NAME "{new_clip_name}"
+            '''.format(**d)
+
+            self.trigger(actions)
+
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+    
+    """
+        @over clip
+        Override snapshot if clip has snap id
+    """
+    def override_process_snap(self):
+        try:
+            self._init_func('override_snap', debug=True)
+            source_clip = self._get_clip()
+            snap_id = get.clip_id(source_clip.name)
+            if snap_id:
+                self.trigger('[%s] SEL/SNAP DEV(ALL.ALL);' % snap_id)
+            else:
+                self.log('No clip id, gato')
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    """
+        @over clip
+        Recall snapshot if clip has id.
+    """
     def control(self):
-        """
-            @over clip
-            Recall snapshot if clip has id.
-        """
         try:
             self._init_func('control', debug=True)
             source_clip = self._get_clip()
