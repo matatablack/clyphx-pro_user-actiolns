@@ -1,7 +1,9 @@
+import re
 import utils.log_utils as log
 import utils.getters as get
 from utils.defs import drum_machine_names_mapping_array, control_modes_defs
 from MidiFighter import MidiFighter
+import time
 
 #tail log: tail -f -n100 "/Users/matata/Library/Preferences/Ableton/Live 10.1/Log.txt"
 
@@ -23,7 +25,163 @@ class TemplateBase:
         self.log = live.canonical_parent.log_message
         self.live = live
 
+    def _select_process_step_track(self, process_step):
+        self.trigger('"%s"/SEL' % (get.track_prefix(self) + ' ' + process_step.capitalize()))
+   
+    """
+        @over any source group
+        Trigger record on selected process step in selected source group and take snapshot
+    """
+    snap_id = ""
+    is_recording = False
+    def record(self, process_step):
+        self._init_func('record', debug=True)
+        try:
+            # select track
+            self._select_process_step_track(process_step)
+            self.snap_id = get.generate_id()
+            # take snap
+            self.trigger("[%s] SEL/SNAP DEV(ALL.ALL);" % self.snap_id)
+            #TODO -> exit if has other clip in slot else self.recording = True
 
+            # prepare track and start recording
+            self.trigger('SEL/STOP NQ; SEL/ARM ON; METRO ON; SREC ON')
+            #TODO -> match clip color with track color
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    """
+        @over clip
+        Stop session recoding and write snapshot id on clip name
+    """
+    def stop_recording_and_write_snap_id(self):
+        self._init_func('stop_recording_and_write_snap_id', debug=True)
+        try:
+            self.trigger('METRO OFF; SREC OFF; OVER OFF; SEL/ARM OFF')
+            selected_clip = self._get_clip()
+            self._apply_snap_id_to_clip_name(selected_clip, self.snap_id)
+            self.snap_id = ""
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    def _apply_snap_id_to_clip_name(self, target_clip, snap_id):
+        self._init_func('_apply_snap_id_to_clip_name', debug=True)
+        try:
+            clip_id = get.clip_id(target_clip.name)
+            new_clip_name = ""
+            if clip_id:
+                # replace id in clip name, returns clip
+                new_clip_name = re.sub(r'\[(.*?)\]', '['+clip_id+']', target_clip.name)
+            else:
+                # concatenate clip id in name
+                new_clip_name = target_clip.name + '   [%s]' % snap_id
+            self.trigger('WAIT 1; SEL/CLIP NAME "%s"' % new_clip_name)
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+        
+
+    def _take_snapshot(self, snap_id):
+        self.trigger("WAIT 1; [%s] SEL/SNAP DEV(ALL.ALL);" % snap_id)
+
+    """
+        @over clip
+        Delete target clip and snapshot if present
+    """
+    def delete_clip(self):
+        self._init_func('delete_clip', debug=True)
+        try:
+            target_clip = self._get_clip()
+            snap_id = get.clip_id(target_clip.name)
+            self.trigger("SNAPDEL %s;SEL/CLIP(SEL) DEL" % snap_id)
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+
+    """
+        @over clip
+        Take or override snapshot and save id on target clip
+    """
+    def take_or_override_snap(self):
+        self._init_func('take_or_override_snap', debug=True)
+        try:
+            target_clip = self._get_clip()
+            snap_id_in_clip = get.clip_id(target_clip.name)
+            snap_id = snap_id_in_clip if snap_id_in_clip else get.generate_id()
+            self._take_snapshot(snap_id)
+            self._apply_snap_id_to_clip_name(target_clip, snap_id)
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+    
+    """
+        @over clip
+        Duplicate clip in new scene. If has snap id duplicate snapshot with new id
+    """
+    def duplicate(self):
+        self._init_func('duplicate', debug=True)
+        try:
+            target_clip = self._get_clip()
+            old_clip_snap_id = get.clip_id(target_clip.name)
+            new_snap_id = get.generate_id()
+            self.trigger("recallsnap %s" % old_clip_snap_id)
+            self._take_snapshot(new_snap_id)
+            self.trigger("ADDSCENE; WAIT 3; KEY UP; WAIT 2; SEL/CLIP(SEL) DUPE; WAIT 2; KEY DOWN; WAIT 5; tpl duplicate_apply_snap_id %s" % new_snap_id)
+
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    def duplicate_apply_snap_id(self, new_snap_id):
+        duplicated_clip = self._get_clip()
+        log.obj(self, duplicated_clip)
+        duplicated_clip.name = re.sub(r'\[(.*?)\]', '['+new_snap_id+']', duplicated_clip.name)
+
+
+    """
+        @over clip
+        Trigger session overdub 
+    """
+    def overdub(self):
+        self._init_func('overdub', debug=True)
+        try:
+            self.trigger('SEL/arm; SREC;')
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+
+    """
+        @over clip
+        Recall snapshot if clip has snap id
+    """
+    def recall(self):
+        self._init_func('recall', debug=True)
+        try:
+            source_clip = self._get_clip()
+            clip_id = get.clip_id(source_clip.name)
+            self.trigger("SETSTOP; SEL/STOP NQ; recallsnap %s; WAIT 4; SATMR; SEL/PLAY;" % clip_id)
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+    """
+        @over clip
+        Recall snapshot if clip has id.
+    """
+    def control(self):
+        try:
+            self._init_func('control', debug=True)
+            source_clip = self._get_clip()
+            clip_id = get.clip_id(source_clip.name)
+            self.trigger("recallsnap %s" % clip_id)
+
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+    
     def dump(self):
         """
             @over clip
@@ -134,20 +292,6 @@ class TemplateBase:
         except BaseException as e:
             self.log('ERROR: ' + str(e))
 
-    """
-        @over clip
-        Recall snapshot if clip has id.
-    """
-    def control(self):
-        try:
-            self._init_func('control', debug=True)
-            source_clip = self._get_clip()
-            clip_id = get.clip_id(source_clip.name)
-            self.trigger("recallsnap %s" % clip_id)
-
-            self._stop_action_exec()
-        except BaseException as e:
-            self.log('ERROR: ' + str(e))
 
     def bind(self, control_mode_name):
         try:
@@ -172,6 +316,35 @@ class TemplateBase:
             self._stop_action_exec()
         except BaseException as e:
             self.log('ERROR: ' + str(e))
+
+    def bidule_arrangement_navigation_helper(self, active):
+        try:
+            self._init_func('drum_machine', debug=True)
+            if active == '1':
+                """ self.trigger('''
+                    %bidule_1% = KEY DOWN;
+                    %bidule_2% = KEY UP;
+                    msg "bidule_arrangement_navigation_helper 1";
+                ''') """
+                self.trigger('''
+                    KEY SHIFT DN;
+                    %bidule_1% = KEY LEFT;
+                    %bidule_2% = KEY RIGHT;
+                    msg "bidule_arrangement_navigation_helper 1";
+                ''')
+            else:
+                self.trigger('''
+                    KEY FLUSH;
+                    %bidule_1% = LEFT; 
+                    %bidule_2% = RIGHT;
+                    msg "bidule_arrangement_navigation_helper 2"
+                ''')
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+
+
 
     def change_bank(self, bank):
         self.mf.change_bank(bank)
@@ -204,6 +377,10 @@ class TemplateBase:
         except BaseException as e:
             self.log('ERROR: ' + str(e))           
             
+
+
+
+    #esto sirve, no more manitos
 
     def on_selected_track_changed(self):
         try:
@@ -245,7 +422,6 @@ class TemplateBase:
     
     def _get_clip(self, target = 'SEL'):
         self.trigger("user_clip(%s) get_clip" % target)
-        # self.log('selected clip name: %s' % getattr(self._target_clip, "name", "No target clip"))
         return self._target_clip
 
      #action utils

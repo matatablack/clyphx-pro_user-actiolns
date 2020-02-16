@@ -20,10 +20,21 @@ def clip_id(s):
     search = re.search(r'\[(.*?)\]',s)
     return search.group(1) if search else None
 
-def selected_device(self, log = False):
-    dev = self.live.song().view.selected_track.view.selected_device
-    if log:
-        log.obj(dev)
+def selected_track(self, should_log = False):
+    track = self.live.song().view.selected_track
+    if should_log:
+        log.obj(self, track)
+    return track
+
+def selected_device(self, should_log = False):
+    dev = selected_track(self).view.selected_device
+    if should_log:
+        log.obj(self, dev)
     return dev
+
+def track_prefix(self):
+    track = selected_track(self)
+    prefix = track.name.split()[0]
+    return prefix
 
 
