@@ -2,7 +2,7 @@ def _make_member_desc(member_name, member):
     return '{} <{}>'.format(member_name, type(member).__name__)
 
 def obj(self, obj):
-    return self.log(dumpobj(obj, False))
+    return self.log(dumpobj(obj, True))
 
 def dumpobj(obj, show_callables=False):
     '''A debugging function that prints out the names and values of all the

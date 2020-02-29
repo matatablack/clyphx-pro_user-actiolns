@@ -137,7 +137,6 @@ class TemplateBase:
 
     def duplicate_apply_snap_id(self, new_snap_id):
         duplicated_clip = self._get_clip()
-        log.obj(self, duplicated_clip)
         duplicated_clip.name = re.sub(r'\[(.*?)\]', '['+new_snap_id+']', duplicated_clip.name)
 
 
@@ -167,28 +166,59 @@ class TemplateBase:
             self._stop_action_exec()
         except BaseException as e:
             self.log('ERROR: ' + str(e))
-    """
-        @over clip
-        Recall snapshot if clip has id.
-    """
-    def control(self):
+
+
+    def dump(self, record_length, process_step = "dump"):
+        self._init_func('dump', debug=True)
         try:
-            self._init_func('control', debug=True)
-            source_clip = self._get_clip()
-            clip_id = get.clip_id(source_clip.name)
-            self.trigger("recallsnap %s" % clip_id)
+            clip = self._get_clip()
+            clip_slot_index = None
+            if not clip:
+                self.log('Attempted to dump over empty slot')
+                self._stop_action_exec()
+                return False
+            else:
+                clip_slots = get.selected_track(self).clip_slots
+                for index, clip_slot in enumerate(clip_slots):
+                    if clip_slot.clip and clip_slot.clip._live_ptr == clip._live_ptr:
+                        self.log('clip slot index found: %s' % str(index))
+                        clip_slot_index = index
+
+                self._select_process_step_track(process_step)
+
+                d = { 
+                    'scene_index': clip_slot_index + 1,
+                    'group_track_name': get.track_prefix(self),
+                    'length': record_length,
+                    'wait_time': int(record_length) + get.quantization_number_value(self),
+                }
+    
+                actions = '''
+                    "{group_track_name} Dump"/ARM ON;
+                    "{group_track_name} Group"/STOP NQ;
+                    "{group_track_name} Group"/PLAY {scene_index};
+                    SRECFIX {length};
+                    WAITS {wait_time}B;
+                    "{group_track_name} Dump"/ARM OFF;
+                    "{group_track_name} Group"/STOP NQ;
+                '''.format(**d)
+ 
+                #todo -> consider change resulting clip name (add "dump id" ?)
+                self.trigger(actions)
 
             self._stop_action_exec()
         except BaseException as e:
             self.log('ERROR: ' + str(e))
+
     
-    def dump(self):
-        """
-            @over clip
-            @targets: [track / clipSlot]
-            Resample clip in target. 
-            Takes an snapshot and write snapshot id into both clip names. 
-        """
+    """
+        @over clip
+        @targets: [track / clipSlot]
+        Resample clip in target. 
+        Takes an snapshot and write snapshot id into both clip names. 
+    """
+    def dump_with_target(self):
+
         try:
             self._init_func('dump', debug=True)
             source_clip = self._get_clip()
