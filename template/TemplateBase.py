@@ -77,7 +77,7 @@ class TemplateBase:
             else:
                 # concatenate clip id in name
                 new_clip_name = target_clip.name + '   [%s]' % snap_id
-            self.trigger('WAIT 1; SEL/CLIP NAME "%s"' % new_clip_name)
+            target_clip.name = new_clip_name
             self._stop_action_exec()
         except BaseException as e:
             self.log('ERROR: ' + str(e))
@@ -109,6 +109,7 @@ class TemplateBase:
         self._init_func('take_or_override_snap', debug=True)
         try:
             target_clip = self._get_clip()
+            log.obj(self, target_clip)
             snap_id_in_clip = get.clip_id(target_clip.name)
             snap_id = snap_id_in_clip if snap_id_in_clip else get.generate_id()
             self._take_snapshot(snap_id)
