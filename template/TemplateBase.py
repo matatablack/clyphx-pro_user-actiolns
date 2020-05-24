@@ -27,6 +27,24 @@ class TemplateBase:
 
     def _select_process_step_track(self, process_step):
         self.trigger('"%s"/SEL' % (get.track_prefix(self) + ' ' + process_step.capitalize()))
+
+    def toggle_rack_for_drum_part(self):
+        self._init_func('toggle_rack_for_drum_part', debug=True)
+        try:
+            prefix = get.track_prefix(self)
+            track = self._get_track(prefix + " Gen")
+            mon_state = track.current_monitoring_state
+
+            if mon_state == 0:
+                # track.current_monitoring_state = 1
+                self.trigger('"%s Gen"/MON AUTO' % prefix)
+            else:
+                # track.current_monitoring_state = 0
+                self.trigger('"%s Gen"/MON IN' % prefix)
+
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
    
     """
         @over any source group
@@ -339,10 +357,12 @@ class TemplateBase:
         try:
             self._init_func('change_view', debug=True)
             if self.current_view == "session":
-                self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD ON; "Production"/FOLD OFF')
+                # self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD ON; "Production"/FOLD OFF')
+                self.trigger('"GEN","Dump","Process","Bucket"/FOLD ON; "Production"/FOLD OFF')
                 self.current_view = "arrangement"
             else:
-                self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD OFF; "Production"/FOLD ON')    
+                # self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD OFF; "Production"/FOLD ON')    
+                self.trigger('"GEN","Dump","Process","Bucket"/FOLD OFF; "Production"/FOLD ON')    
                 self.current_view = "session"
             self._stop_action_exec()
         except BaseException as e:
