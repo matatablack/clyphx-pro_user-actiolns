@@ -5,7 +5,7 @@ from utils.defs import drum_machine_names_mapping_array, control_modes_defs
 from MidiFighter import MidiFighter
 import time
 
-#tail log: tail -f -n100 "/Users/matata/Library/Preferences/Ableton/Live 10.1/Log.txt"
+#tail log: tail -f -n100 "/Users/matata/Library/Preferences/Ableton/Live 10.1.9/Log.txt"
 
 class TemplateBase:
 
@@ -24,6 +24,39 @@ class TemplateBase:
     def _do_init(self, live):
         self.log = live.canonical_parent.log_message
         self.live = live
+
+    """
+        Forum User Actions
+    """
+    def mixer_add(self, channel):
+        self._init_func('mixer_add', debug=True)
+        try:
+            d = { 
+                'target': target_track.name,
+                'source': source_track.name,
+                'length': source_clip.length / 4,
+                'wait_time': source_clip.length / 4 + get.quantization_number_value(self),
+                'clip': source_clip.name,
+                'dump_id': dump_id
+            }
+            actions = '''
+                [{dump_id}] "{source}"/SNAP;
+                "{target}"/IN "{source}"; 
+                "{target}"/ARM ON;
+                "{source}"/STOP;
+                SRECFIX {length};
+                "{source}"/PLAY "{clip}";
+                WAITS {wait_time}B;
+                "{source}", "{target}"/ARM OFF;
+                "{source}"/STOP NQ;
+                "{target}"/MON AUTO;
+                "{target}"/CLIP(SEL) NAME "{clip}"
+            '''.format(**d)
+
+            self.trigger(actions)
+            self._stop_action_exec()
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
 
     def _select_process_step_track(self, process_step):
         self.trigger('"%s"/SEL' % (get.track_prefix(self) + ' ' + process_step.capitalize()))
@@ -45,7 +78,8 @@ class TemplateBase:
             self._stop_action_exec()
         except BaseException as e:
             self.log('ERROR: ' + str(e))
-   
+
+
     """
         @over any source group
         Trigger record on selected process step in selected source group and take snapshot
@@ -342,6 +376,10 @@ class TemplateBase:
             self.log('ERROR: ' + str(e))
 
 
+    """
+        @MidiFighter
+        change MF control mode (defs.py)
+    """
     def bind(self, control_mode_name):
         try:
             self._init_func('bind', debug=True)
@@ -352,18 +390,21 @@ class TemplateBase:
         except BaseException as e:
             self.log('ERROR: ' + str(e))
 
+  
     current_view = "session"
     def change_view(self):
         try:
             self._init_func('change_view', debug=True)
             if self.current_view == "session":
-                # self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD ON; "Production"/FOLD OFF')
-                self.trigger('"GEN","Dump","Process","Bucket"/FOLD ON; "Production"/FOLD OFF')
                 self.current_view = "arrangement"
+                # self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD ON; "Production"/FOLD OFF')
+                # self.trigger('"GEN","Dump","Process","Bucket"/FOLD ON; "Production"/FOLD OFF')
+                self.trigger('"GEN"/FOLD ON; "PROD"/FOLD OFF')
             else:
-                # self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD OFF; "Production"/FOLD ON')    
-                self.trigger('"GEN","Dump","Process","Bucket"/FOLD OFF; "Production"/FOLD ON')    
                 self.current_view = "session"
+                # self.trigger('TGLMAIN; "GEN","Dump","Process","Bucket"/FOLD OFF; "Production"/FOLD ON')    
+                #self.trigger('"GEN","Dump","Process","Bucket"/FOLD OFF; "Production"/FOLD ON')    
+                self.trigger('"GEN"/FOLD OFF; "PROD"/FOLD ON')    
             self._stop_action_exec()
         except BaseException as e:
             self.log('ERROR: ' + str(e))
