@@ -25,38 +25,6 @@ class TemplateBase:
         self.log = live.canonical_parent.log_message
         self.live = live
 
-    """
-        Forum User Actions
-    """
-    def mixer_add(self, channel):
-        self._init_func('mixer_add', debug=True)
-        try:
-            d = { 
-                'target': target_track.name,
-                'source': source_track.name,
-                'length': source_clip.length / 4,
-                'wait_time': source_clip.length / 4 + get.quantization_number_value(self),
-                'clip': source_clip.name,
-                'dump_id': dump_id
-            }
-            actions = '''
-                [{dump_id}] "{source}"/SNAP;
-                "{target}"/IN "{source}"; 
-                "{target}"/ARM ON;
-                "{source}"/STOP;
-                SRECFIX {length};
-                "{source}"/PLAY "{clip}";
-                WAITS {wait_time}B;
-                "{source}", "{target}"/ARM OFF;
-                "{source}"/STOP NQ;
-                "{target}"/MON AUTO;
-                "{target}"/CLIP(SEL) NAME "{clip}"
-            '''.format(**d)
-
-            self.trigger(actions)
-            self._stop_action_exec()
-        except BaseException as e:
-            self.log('ERROR: ' + str(e))
 
     def _select_process_step_track(self, process_step):
         self.trigger('"%s"/SEL' % (get.track_prefix(self) + ' ' + process_step.capitalize()))
@@ -385,7 +353,7 @@ class TemplateBase:
             self._init_func('bind', debug=True)
             if control_modes_defs[control_mode_name]:
                 self.trigger(control_modes_defs[control_mode_name]["binding"])
-                self.mf.set_color_schema(control_modes_defs[control_mode_name]["color_schema"])
+                # self.mf.set_color_schema(control_modes_defs[control_mode_name]["color_schema"])
             self._stop_action_exec()
         except BaseException as e:
             self.log('ERROR: ' + str(e))
