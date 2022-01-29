@@ -8,15 +8,16 @@ class MixerActions(UserActionsBase):
     def create_actions(self):
         self.add_global_action('mixer_add', self.add)
         self.add_global_action('mixer_monitor', self.monitor)
+        self.add_global_action('daw_monitor', self.daw_monitor)
         self.add_track_action('mixer_assign', self.assign)
 
 
     dumpobj = dumpobj
 
     track_name_by_channel = { 
-        "1/2": "[1/2] Drums", 
-        "3": "[3] Kick", 
-        "4": "[4] Minitaur", 
+        "1": "[1] Kick", 
+        "2": "[2] Minitaur", 
+        "3/4": "[3/4] Drums", 
         "5": "[5] V. Bass", 
         "6": "[6] SH01A", 
         "7": "[7] TB3", 
@@ -41,8 +42,8 @@ class MixerActions(UserActionsBase):
             # self.canonical_parent.trigger_action_list('[%s] recall' % ident)
             # self.canonical_parent.log_message(dumpobj(self.song().view.selected_track))
             tracks = self.get_tracks_if_name_contains(channel)
-            self.canonical_parent.log_message(channel)
-            self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "testing!!!! %s"' % tracks[0].name)
+            # self.canonical_parent.log_message(channel)
+            # self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "testing!!!! %s"' % tracks[0].name)
 
             output_track = self.get_output_track_by_channel(channel)
             
@@ -60,11 +61,13 @@ class MixerActions(UserActionsBase):
                 SEL/IN "Ext. In";
                 WAIT 1;
                 SEL/INSUB "{track_channel}";
-                SEL/OUT "{output}";
-                SEL/ARM;
+                WAIT 1;
                 SEL/MON OFF;
-                SEL/COLOR {color_index}
+                SEL/COLOR {color_index};
+                SEL/ARM;
             '''.format(**dictionary)
+
+            #SEL/OUT "{output}";
 
             self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
 
@@ -135,7 +138,8 @@ class MixerActions(UserActionsBase):
             self.canonical_parent.log_message('monitor: %s' % monitor)
 
             tracks = self.get_tracks_if_name_contains('[%s]' % track_channel_id)
-            for track in tracks:
+            not_armed_tracks = filter(lambda track: track.arm != 1, tracks)
+            for track in not_armed_tracks:
                 track_idx = list(self.song().tracks).index(track) + 1
                 self.canonical_parent.log_message('track to apply mon: %s' % track.name)
                 self.canonical_parent.log_message('track idx: %s' % track_idx)
@@ -144,8 +148,24 @@ class MixerActions(UserActionsBase):
             self.canonical_parent.log_message('ERROR: ' + str(e))
 
 
-    def on_track_list_changed(self):
-        self.canonical_parent.log_message('Track list changed..')
+    def daw_monitor(self, action_def, args):
+        try:
+            self.canonical_parent.log_message('-----DAW MONITOR-----')
+            args = args.split()
+            track_channel_id = args[0].replace('"', "")
+            monitor = args[1] == 'on'
+
+            self.canonical_parent.log_message('track_channel_id: ' + track_channel_id)
+            self.canonical_parent.log_message('monitor: %s' % monitor)
+
+            tracks = self.get_tracks_if_name_contains('(%s)' % track_channel_id)
+            for track in tracks:
+                track_idx = list(self.song().tracks).index(track) + 1
+                self.canonical_parent.log_message('track to apply mon: %s' % track.name)
+                self.canonical_parent.log_message('track idx: %s' % track_idx)
+                self.canonical_parent.clyphx_pro_component.trigger_action_list('%s/DEV(1) P1 %s' % (track_idx, "127" if monitor else "0"))
+        except BaseException as e:
+            self.canonical_parent.log_message('ERROR: ' + str(e))
 
 
     def get_track_channel(self, track):
@@ -166,17 +186,11 @@ class MixerActions(UserActionsBase):
 
     def get_output_track_by_channel(self, channel):
         return self.get_tracks_if_name_contains("(%s)" % channel)[0]
-     
 
-"""     def apply_if_clip_name_contains(self, action_def, args):
-     
-        arg_split = args.split()
-        track_list = list(self.song().tracks)
-        for track in track_list:
-            if arg_split[0] in track.name:
-                action = '%s/%s' % (track_list.index(track) + 1, ' '.join(arg_split[1:]))
-                self.canonical_parent.clyphx_pro_component.trigger_action_list(action)
- """
-
-
-    
+    def on_track_list_changed(self):
+        self.canonical_parent.log_message('Track list changed..')
+        # track_list = list(self.song().tracks)
+        # # result_tracks = []
+        # for track in track_list:
+        #     if track.is_grouped and "[BUS]" in track.group_track.name:
+        #          self.canonical_parent.log_message(dumpobj(track))
