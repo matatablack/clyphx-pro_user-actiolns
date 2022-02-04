@@ -14,6 +14,7 @@ class MixerActions(UserActionsBase):
         self.add_track_action('mixer_assign', self.assign)
         self.add_track_action('mixer_unassign', self.unassign)
         self.add_global_action('mixer_unbind', self.unbind_all)
+        self.add_track_action('mixer_arm_assigned', self.arm_assigned)
 
 
     dumpobj = dumpobj
@@ -100,12 +101,21 @@ class MixerActions(UserActionsBase):
             channel = args[0].strip()
             is_midi = args[0] == "midi"
 
+            if '[->>' in track.name or '[->' in track.name:
+                msg = 'Track Already Assigned'
+                self.canonical_parent.log_message(msg)
+                self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"' % msg)
+                return
+
+
             if is_midi: 
                 fader_num = int(args[1])
-                assigned_to = '[-> midi %s]' % fader_num
+                assigned_to = '[->> midi %s]' % fader_num
                 tracks = self.get_tracks_if_name_contains(assigned_to)
                 if len(tracks) > 0: 
-                    self.canonical_parent.log_message('Channel Already Assigned to %s' % tracks[0].name)
+                    msg = 'Channel Already Assigned to %s' % tracks[0].name
+                    self.canonical_parent.log_message(msg)
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"' % msg)
                     return
                 
                 dictionary = { 
@@ -127,7 +137,7 @@ class MixerActions(UserActionsBase):
                 self.canonical_parent.log_message(actions)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
             else: 
-                assigned_to = '[-> %s]' % channel
+                assigned_to = '[->%s]' % channel
                 tracks = self.get_tracks_if_name_contains(assigned_to)
                 if len(tracks) > 0: 
                     msg = 'Channel Already Assigned to %s' % tracks[0].name
@@ -143,7 +153,7 @@ class MixerActions(UserActionsBase):
                     'dev_name': ("ToMixer%s.adv" % (channel.split('/')[0])), 
                     'channel_first': channel.split('/')[0],
                     'origin_track_color_index': track.color_index + 1,
-                    'return_track_name': '>' + track_name
+                    'return_track_name': '>' + track_name.split('[->')[0] + '[->>' + channel + ']'
                 }       
                 actions = '''
                     SEL/MUTE ON;
@@ -172,12 +182,18 @@ class MixerActions(UserActionsBase):
         try:
             self.canonical_parent.log_message('-----UNASSIGN-----')
             track = action_def['track']
-            
             args = args.split()
-            # channel = args[0]
+            channel = args[0] if args else None
 
             assigned_prefix = '[->'
-            tracks = self.get_tracks_if_name_contains(assigned_prefix)
+            assigned_prefix_2 = '[->>'
+            
+            if channel:
+                self.canonical_parent.log_message('PREFIX--> %s' % assigned_prefix + channel)
+                tracks = self.get_tracks_if_name_contains(assigned_prefix + channel)
+                tracks = tracks + self.get_tracks_if_name_contains(assigned_prefix_2 + channel)
+            else:
+                tracks = self.get_tracks_if_name_contains(assigned_prefix)
             self.canonical_parent.log_message('tracks qty: %s' % len(tracks))
             
             for track in tracks:
@@ -306,6 +322,28 @@ class MixerActions(UserActionsBase):
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))
 
+    def arm_assigned(self, action_def, args):
+        try:
+            self.canonical_parent.log_message('-----ARM ALL ASSIGNED-----')
+            track = action_def['track']
+            
+            args = args.split()
+            # channel = args[0]
+
+            assigned_prefix = '[->>'
+            tracks = self.get_tracks_if_name_contains(assigned_prefix)
+            self.canonical_parent.log_message('tracks qty: %s' % len(tracks))
+            
+            for track in tracks:
+                track_idx = list(self.song().tracks).index(track) + 1 
+                dictionary = { 'track_idx': track_idx }
+                actions = '''{track_idx}/ARM ON;'''.format(**dictionary)
+
+                self.canonical_parent.log_message(actions)
+                self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+            
+        except BaseException as e:
+            self.canonical_parent.log_message('ERROR: ' + str(e))
 
 
 
