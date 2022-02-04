@@ -38,19 +38,6 @@ class MixerActions(UserActionsBase):
         "25/26": "[25/26] Pitchfactor"
     }
 
-    group_name_by_channel = { 
-        "1/2": "KICK 1 [BUS]",
-        "2": "BASS 2 [BUS]",
-        "3/4": "DRUMS 3/4 [BUS]",
-        "5/6": "HITS 5/6 [BUS]",
-        "7/8": "MUSIC 7/8 [BUS]",
-        "9/10": "VOX 9/10 [BUS]",
-        "11/12": "ATMOSPHERE 11/12 [BUS]",
-        "13/14": "FX 13/14 [BUS]",
-        "15/16": "ALIENS 15/16 [BUS]",
-        "MIDI_1": "UP MIDI_1 [BUS]"
-    }
-
     def add(self, action_def, args):
         try:
             args = args.split()
@@ -88,15 +75,6 @@ class MixerActions(UserActionsBase):
 
     """
     ASSIGN
-        selected channel
-        -> add external audio effect with audio to target mixer channel
-        -> add "assigned" state on channel name 
-        -> INSAUDIO o add track and set input from target mixer channel (return)
-            name equals previous track name + resample
-            monitor auto
-            arm on
-            bind fader_${target_channel} to sel/vol
-
     """
     def assign(self, action_def, args):
         try:
@@ -136,17 +114,20 @@ class MixerActions(UserActionsBase):
                 assigned_to = '[-> %s]' % channel
                 tracks = self.get_tracks_if_name_contains(assigned_to)
                 if len(tracks) > 0: 
-                    self.canonical_parent.log_message('Channel Already Assigned to %s' % tracks[0].name)
+                    msg = 'Channel Already Assigned to %s' % tracks[0].name
+                    self.canonical_parent.log_message(msg)
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"' % msg)
                     return
-
+                
+                track_name = ("%s %s" % (track.name.split(assigned_to)[0], assigned_to))
                 dictionary = { 
                     'track_idx': track_idx,
-                    'track_name': ("%s %s" % (track.name.split(assigned_to)[0], assigned_to)),
+                    'track_name': track_name,
                     'channel': channel,
                     'dev_name': ("ToMixer%s.adv" % (channel.split('/')[0])), 
                     'channel_first': channel.split('/')[0],
-                    'bus_channel': self.group_name_by_channel[channel],
-                    'origin_track_color_index': track.color_index + 1
+                    'origin_track_color_index': track.color_index + 1,
+                    'return_track_name': '>' + track_name
                 }       
                 actions = '''
                     SEL/MUTE ON;
@@ -157,8 +138,8 @@ class MixerActions(UserActionsBase):
                     WAIT 3;  
                     SEL/COLOR {origin_track_color_index};
                     SEL/INSUB "Post FX";     
-                    BIND FADER_{channel_first} "From {track_name}"/VOL;
-                    "{bus_channel}"/DEV("ToMixer") OFF;
+                    SEL/NAME "{return_track_name}";
+                    BIND FADER_{channel_first} "{return_track_name}"/VOL;
                 '''.format(**dictionary)
                 self.canonical_parent.log_message(actions)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
@@ -223,18 +204,18 @@ class MixerActions(UserActionsBase):
                 'track_idx': 0,
             }
             actions = '''                  
-                    BIND KNOB_1 "KICK 1 [BUS]"/VOL;
-                    BIND KNOB_2 "BASS 2 [BUS]"/VOL;
-                    BIND KNOB_3 "DRUMS 3/4 [BUS]"/VOL;
-                    BIND KNOB_4 "HITS 5/6 [BUS]"/VOL;
-                    BIND KNOB_5 "MUSIC 7/8 [BUS]"/VOL;
-                    BIND KNOB_6 "VOX 9/10 [BUS]"/VOL;
-                    BIND KNOB_7 "ATMOSPHERE 11/12 [BUS]"/VOL;
-                    BIND KNOB_8 "FX 13/14 [BUS]"/VOL;
-                    BIND KNOB_9 "FX [rec]"/PAN;
-                    BIND KNOB_10 "Aliens [rec]"/PAN;
-                    BIND KNOB_11 "Up [rec]"/PAN;
-                    BIND KNOB_12 SELP;
+                    BIND KNOB_1 "[KICK]"/VOL
+                    BIND KNOB_2 "[BASS]"/VOL
+                    BIND KNOB_3 "[DRUMS]"/VOL
+                    BIND KNOB_4 "[HITS]"/VOL
+                    BIND KNOB_5 "[MUSIC]"/VOL
+                    BIND KNOB_6 "[VOX]"/VOL
+                    BIND KNOB_7 "[ATMOSPHERE]"/VOL
+                    BIND KNOB_8 "[FX]"/VOL
+                    BIND KNOB_9 "[ALIENS]"/VOL
+                    BIND KNOB_10 "[UP]"/VOL
+                    BIND KNOB_11 "[REFERENCE]"/VOL
+                    BIND KNOB_12 SEL/PAN;
 
                     BIND FADER_1 NONE;
                     BIND FADER_2 NONE;
@@ -255,7 +236,7 @@ class MixerActions(UserActionsBase):
 
                     BIND FADER_MIDI_1 NONE;
                     BIND FADER_MIDI_2 NONE;
-                    BIND FADER_MIDI_3 "REFERENCE [BUS]"/VOL;
+                    BIND FADER_MIDI_3 NONE;
                     BIND FADER_MIDI_4 SEL/VOL;
             '''.format(**dictionary)
 
