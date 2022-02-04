@@ -13,7 +13,7 @@ class MixerActions(UserActionsBase):
         self.add_global_action('daw_monitor', self.daw_monitor)
         self.add_track_action('mixer_assign', self.assign)
         self.add_track_action('mixer_unassign', self.unassign)
-        self.add_track_action('mixer_unbind', self.unbind_all)
+        self.add_global_action('mixer_unbind', self.unbind_all)
 
 
     dumpobj = dumpobj
@@ -39,7 +39,7 @@ class MixerActions(UserActionsBase):
     }
 
     group_name_by_channel = { 
-        "1": "KICK 1 [BUS]",
+        "1/2": "KICK 1 [BUS]",
         "2": "BASS 2 [BUS]",
         "3/4": "DRUMS 3/4 [BUS]",
         "5/6": "HITS 5/6 [BUS]",
@@ -104,7 +104,7 @@ class MixerActions(UserActionsBase):
             track = action_def['track']
             track_idx = list(self.song().tracks).index(track) + 1
             args = args.split()
-            channel = args[0]
+            channel = args[0].strip()
             is_midi = args[0] == "midi"
 
             if is_midi: 
@@ -119,9 +119,9 @@ class MixerActions(UserActionsBase):
                     'track_idx': track_idx,
                     'track_name': ("%s %s" % (track.name.split(assigned_to)[0], assigned_to)),
                     'fader_num': fader_num,
-                    'knob_1_index' : fader_num,
+                    'knob_3_index' : fader_num,
                     'knob_2_index' : fader_num + 4,
-                    'knob_3_index' : fader_num + 8
+                    'knob_1_index' : fader_num + 8
                 }
                 actions = '''
                     SEL/NAME "{track_name}";
@@ -146,19 +146,19 @@ class MixerActions(UserActionsBase):
                     'dev_name': ("ToMixer%s.adv" % (channel.split('/')[0])), 
                     'channel_first': channel.split('/')[0],
                     'bus_channel': self.group_name_by_channel[channel],
-                    # 'rec_channel': self.group_name_by_channel[channel],
+                    'origin_track_color_index': track.color_index + 1
                 }       
                 actions = '''
+                    SEL/MUTE ON;
                     SEL/NAME "{track_name}";
-                    SEL/MUTE;
                     LOADUSER "{dev_name}";
-                    WAIT 3;           
+                    WAIT 2;           
                     INSAUDIO;
                     WAIT 3;  
-                    SEL/INSUB "Post FX";         
+                    SEL/COLOR {origin_track_color_index};
+                    SEL/INSUB "Post FX";     
                     BIND FADER_{channel_first} "From {track_name}"/VOL;
                     "{bus_channel}"/DEV("ToMixer") OFF;
-                    "{bus_channel}"/DEV("ToMixer") MON IN;
                 '''.format(**dictionary)
                 self.canonical_parent.log_message(actions)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
@@ -171,7 +171,7 @@ class MixerActions(UserActionsBase):
 
     def unassign(self, action_def, args):
         try:
-            self.canonical_parent.log_message('-----UNNNNNNASSIGN-----')
+            self.canonical_parent.log_message('-----UNASSIGN-----')
             track = action_def['track']
             
             args = args.split()
@@ -179,13 +179,20 @@ class MixerActions(UserActionsBase):
 
             assigned_prefix = '[->'
             tracks = self.get_tracks_if_name_contains(assigned_prefix)
+            self.canonical_parent.log_message('tracks qty: %s' % len(tracks))
+            
             for track in tracks:
+                self.canonical_parent.log_message('unassining track %s' % track.name)
                 search = re.search(r'\[->(.*?)\]', track.name)
                 channel = search.group(1) if search else None 
-                channel_first = channel.split('/')[0]
+                is_midi = True if "midi" in channel else False
+
+                self.canonical_parent.log_message('CHANNEL %s' % channel)
+
+                channel_first = channel.split('/')[0].strip() if not is_midi else channel[-1]
                 to_mixer_dev_name = 'ToMixer%s' % channel_first
-                
-                track_idx = list(self.song().tracks).index(track) + 1
+
+                track_idx = list(self.song().tracks).index(track) + 1        
 
                 dictionary = { 
                     'track_idx': track_idx,
@@ -193,20 +200,18 @@ class MixerActions(UserActionsBase):
                     'dev_name': to_mixer_dev_name,
                     'channel': channel,
                     'channel_first': channel_first,
+                    'is_midi_suffix': "MIDI_" if is_midi else ""
                 }
 
                 actions = '''
                     {track_idx}/NAME "{track_name}";
                     {track_idx}/DEV("{dev_name}") DEL;
-                    BIND FADER_{channel_first} NONE;
-                    "KICK 1 [BUS]", "BASS 2 [BUS]", "DRUMS 3/4 [BUS]", "HITS 5/6 [BUS]", "MUSIC 7/8 [BUS]", "VOX 9/10 [BUS]", "ATMOSPHERE 11/12 [BUS]", "FX 13/14 [BUS]", "ALIENS 15/16 [BUS]"/DEV("ToMixer") ON;
-                    "KICK 1 [BUS]", "BASS 2 [BUS]", "DRUMS 3/4 [BUS]", "HITS 5/6 [BUS]", "MUSIC 7/8 [BUS]", "VOX 9/10 [BUS]", "ATMOSPHERE 11/12 [BUS]", "FX 13/14 [BUS]", "ALIENS 15/16 [BUS]"/MON AUTO
+                    {track_idx}/ARM OFF;
+                    BIND FADER_{is_midi_suffix}{channel_first} NONE;
                 '''.format(**dictionary)
 
-
-            self.canonical_parent.log_message(actions)
-
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+                self.canonical_parent.log_message(actions)
+                self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
             
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))
@@ -214,46 +219,44 @@ class MixerActions(UserActionsBase):
     def unbind_all(self, action_def, args):
         try:
             self.canonical_parent.log_message('-----UNBIND-----')
-            track = action_def['track']
-            track_idx = list(self.song().tracks).index(track) + 1
             dictionary = { 
-                'track_idx': track_idx,
-            }   
+                'track_idx': 0,
+            }
             actions = '''                  
-                    BIND KNOB_1 "Bass [rec]"/PAN;
-                    BIND KNOB_2 "Drums [rec]"/PAN;
-                    BIND KNOB_3 "Hits [rec]"/PAN;
-                    BIND KNOB_4 SEL/SEND A;
-                    BIND KNOB_5 "Music [rec]"/PAN;
-                    BIND KNOB_6 "Vox [rec]"/PAN;
-                    BIND KNOB_7 "Atmosphere [rec]"/PAN;
-                    BIND KNOB_8 SEL/SEND B;
+                    BIND KNOB_1 "KICK 1 [BUS]"/VOL;
+                    BIND KNOB_2 "BASS 2 [BUS]"/VOL;
+                    BIND KNOB_3 "DRUMS 3/4 [BUS]"/VOL;
+                    BIND KNOB_4 "HITS 5/6 [BUS]"/VOL;
+                    BIND KNOB_5 "MUSIC 7/8 [BUS]"/VOL;
+                    BIND KNOB_6 "VOX 9/10 [BUS]"/VOL;
+                    BIND KNOB_7 "ATMOSPHERE 11/12 [BUS]"/VOL;
+                    BIND KNOB_8 "FX 13/14 [BUS]"/VOL;
                     BIND KNOB_9 "FX [rec]"/PAN;
                     BIND KNOB_10 "Aliens [rec]"/PAN;
                     BIND KNOB_11 "Up [rec]"/PAN;
-                    BIND KNOB_12 SEL/PAN;
+                    BIND KNOB_12 SELP;
 
-                    BIND FADER_1 "Kick [rec]"/VOL
-                    BIND FADER_2 "Bass [rec]"/VOL
-                    BIND FADER_3 "Drums [rec]"/VOL
-                    BIND FADER_4 NONE
-                    BIND FADER_5 "Hits [rec]"/VOL
-                    BIND FADER_6 NONE
-                    BIND FADER_7 "Music [rec]"/VOL
-                    BIND FADER_8 NONE
-                    BIND FADER_9 "Vox [rec]"/VOL
-                    BIND FADER_10 NONE
-                    BIND FADER_11 "Atmosphere [rec]"/VOL
-                    BIND FADER_12 NONE
-                    BIND FADER_13 "FX [rec]"/VOL
-                    BIND FADER_14 NONE
-                    BIND FADER_15 "Aliens [rec]"/VOL
-                    BIND FADER_16 NONE
+                    BIND FADER_1 NONE;
+                    BIND FADER_2 NONE;
+                    BIND FADER_3 NONE;
+                    BIND FADER_4 NONE;
+                    BIND FADER_5 NONE;
+                    BIND FADER_6 NONE;
+                    BIND FADER_7 NONE;
+                    BIND FADER_8 NONE;
+                    BIND FADER_9 NONE;
+                    BIND FADER_10 NONE;
+                    BIND FADER_11 NONE;
+                    BIND FADER_12 NONE;
+                    BIND FADER_13 NONE;
+                    BIND FADER_14 NONE;
+                    BIND FADER_15 NONE;
+                    BIND FADER_16 NONE;
 
-                    BIND FADER_MIDI_1 "Up [rec]"/VOL
-                    BIND FADER_MIDI_2 "REFERENCE [rec]"/VOL
-                    BIND FADER_MIDI_3 NONE
-                    BIND FADER_MIDI_4 SEL/VOL
+                    BIND FADER_MIDI_1 NONE;
+                    BIND FADER_MIDI_2 NONE;
+                    BIND FADER_MIDI_3 "REFERENCE [BUS]"/VOL;
+                    BIND FADER_MIDI_4 SEL/VOL;
             '''.format(**dictionary)
 
             self.canonical_parent.log_message(actions)
