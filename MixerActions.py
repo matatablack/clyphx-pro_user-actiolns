@@ -117,6 +117,7 @@ class MixerActions(UserActionsBase):
                     'knob_1_index' : fader_num + 8
                 }
                 actions = '''
+                    SEL/MUTE OFF;
                     SEL/NAME "{track_name}";
                     BIND FADER_MIDI_{fader_num} "{track_name}"/VOL;
                     BIND KNOB_{knob_1_index} "{track_name}"/PAN;
@@ -154,6 +155,8 @@ class MixerActions(UserActionsBase):
                     SEL/COLOR {origin_track_color_index};
                     SEL/INSUB "Post FX";     
                     SEL/NAME "{return_track_name}";
+                    BIND lp_arm_{channel_first} "{return_track_name}"/ARM;
+                    BIND lp_solo_{channel_first} "{return_track_name}"/SOLO;
                     BIND FADER_{channel_first} "{return_track_name}"/VOL;
                 '''.format(**dictionary)
                 self.canonical_parent.log_message(actions)
@@ -188,11 +191,20 @@ class MixerActions(UserActionsBase):
                 channel_first = channel.split('/')[0].strip() if not is_midi else channel[-1]
                 to_mixer_dev_name = 'ToMixer%s' % channel_first
 
-                track_idx = list(self.song().tracks).index(track) + 1      
+                track_idx = list(self.song().tracks).index(track) + 1  
 
-                knob_3_index = int(channel_first) + 0
-                knob_2_index = int(channel_first) + 4
-                knob_1_index = int(channel_first) + 8                
+
+                knob_1_message = ""
+                knob_2_message = ""
+                knob_3_message = ""
+                if is_midi: 
+                    knob_3_index = int(channel_first) + 0
+                    knob_2_index = int(channel_first) + 4
+                    knob_1_index = int(channel_first) + 8          
+                    knob_3_message = 'BIND KNOB_%s "%s"/VOL;' % (knob_3_index, self.group_by_knob['KNOB_%s' % knob_3_index])
+                    knob_2_message = 'BIND KNOB_%s "%s"/VOL;' % (knob_2_index, self.group_by_knob['KNOB_%s' % knob_2_index])
+                    knob_1_message = 'BIND KNOB_%s "%s"/VOL;' % (knob_1_index, self.group_by_knob['KNOB_%s' % knob_1_index])
+
 
                 dictionary = { 
                     'track_idx': track_idx,
@@ -201,26 +213,23 @@ class MixerActions(UserActionsBase):
                     'channel': channel,
                     'channel_first': channel_first,
                     'is_midi_suffix': "MIDI_" if is_midi else "",
-                    'knob_1_value': self.group_by_knob['KNOB_%s' % knob_1_index],
-                    'knob_2_value':self.group_by_knob['KNOB_%s' % knob_2_index],
-                    'knob_3_value': self.group_by_knob['KNOB_%s' % knob_3_index],
-                    'knob_1_index':knob_1_index,
-                    'knob_2_index':knob_2_index,
-                    'knob_3_index':knob_3_index,
+                    'knob_1_message': knob_1_message,
+                    'knob_2_message': knob_2_message,
+                    'knob_3_message': knob_3_message,
                 }
 
                 actions = '''
                     {track_idx}/NAME "{track_name}";
                     {track_idx}/DEV("{dev_name}") DEL;
                     {track_idx}/ARM OFF;
-                    WAIT 2;
-                    
-                    BIND KNOB_{knob_1_index} "{knob_1_value}"/VOL;
-                    BIND KNOB_{knob_2_index} "{knob_2_value}"/VOL;
-                    BIND KNOB_{knob_3_index} "{knob_3_value}"/VOL;
-
+                    WAIT 1;
+                    {knob_1_message}
+                    {knob_2_message}
+                    {knob_3_message}
                     WAIT 1;
                     BIND FADER_{is_midi_suffix}{channel_first} NONE;
+                    BIND lp_arm_{channel_first} NONE;
+                    BIND lp_solo_{channel_first} NONE;
                 '''.format(**dictionary)
 
                 self.canonical_parent.log_message(actions)
@@ -270,6 +279,25 @@ class MixerActions(UserActionsBase):
                     BIND FADER_MIDI_2 NONE;
                     BIND FADER_MIDI_3 NONE;
                     BIND FADER_MIDI_4 SEL/VOL;
+
+                    BIND lp_arm_1 NONE;
+                    BIND lp_arm_3 NONE;
+                    BIND lp_arm_5 NONE;
+                    BIND lp_arm_7 NONE;
+                    BIND lp_arm_9 NONE;
+                    BIND lp_arm_11 NONE;
+                    BIND lp_arm_13 NONE;
+                    BIND lp_arm_15 NONE;
+
+                    BIND lp_solo_1 NONE;
+                    BIND lp_solo_3 NONE;
+                    BIND lp_solo_5 NONE;
+                    BIND lp_solo_7 NONE;
+                    BIND lp_solo_9 NONE;
+                    BIND lp_solo_11 NONE;
+                    BIND lp_solo_13 NONE;
+                    BIND lp_solo_15 NONE;
+
             '''.format(**dictionary)
 
             self.canonical_parent.log_message(actions)
