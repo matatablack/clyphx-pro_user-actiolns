@@ -38,6 +38,21 @@ class MixerActions(UserActionsBase):
         "25/26":  "Pitchfactor"
     }
 
+    group_by_knob = {
+        "KNOB_1" : "[KICK]",
+        "KNOB_2" : "[BASS]",
+        "KNOB_3" : "[DRUMS]",
+        "KNOB_4" : "[HITS]",
+        "KNOB_5" : "[MUSIC]",
+        "KNOB_6" : "[VOX]",
+        "KNOB_7" : "[ATMOSPHERE]",
+        "KNOB_8" : "[FX]",
+        "KNOB_9" : "[ALIENS]",
+        "KNOB_10" : "[UP]",
+        "KNOB_11" : "[REFERENCE]",
+        "KNOB_12" : "SEL/SEND"
+    }
+
     def add(self, action_def, args):
         try:
             args = args.split()
@@ -95,7 +110,7 @@ class MixerActions(UserActionsBase):
                 
                 dictionary = { 
                     'track_idx': track_idx,
-                    'track_name': ("%s %s" % (track.name.split(assigned_to)[0], assigned_to)),
+                    'track_name': ("%s %s" % (track.name.split(assigned_to)[0], assigned_to)).strip(),
                     'fader_num': fader_num,
                     'knob_3_index' : fader_num,
                     'knob_2_index' : fader_num + 4,
@@ -119,7 +134,7 @@ class MixerActions(UserActionsBase):
                     self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"' % msg)
                     return
                 
-                track_name = ("%s %s" % (track.name.split(assigned_to)[0], assigned_to))
+                track_name = ("%s %s" % (track.name.split(assigned_to)[0], assigned_to)).strip()
                 dictionary = { 
                     'track_idx': track_idx,
                     'track_name': track_name,
@@ -173,21 +188,38 @@ class MixerActions(UserActionsBase):
                 channel_first = channel.split('/')[0].strip() if not is_midi else channel[-1]
                 to_mixer_dev_name = 'ToMixer%s' % channel_first
 
-                track_idx = list(self.song().tracks).index(track) + 1        
+                track_idx = list(self.song().tracks).index(track) + 1      
+
+                knob_3_index = int(channel_first) + 0
+                knob_2_index = int(channel_first) + 4
+                knob_1_index = int(channel_first) + 8                
 
                 dictionary = { 
                     'track_idx': track_idx,
-                    'track_name': track.name.split(assigned_prefix)[0],
+                    'track_name': track.name.split(assigned_prefix)[0].strip(),
                     'dev_name': to_mixer_dev_name,
                     'channel': channel,
                     'channel_first': channel_first,
-                    'is_midi_suffix': "MIDI_" if is_midi else ""
+                    'is_midi_suffix': "MIDI_" if is_midi else "",
+                    'knob_1_value': self.group_by_knob['KNOB_%s' % knob_1_index],
+                    'knob_2_value':self.group_by_knob['KNOB_%s' % knob_2_index],
+                    'knob_3_value': self.group_by_knob['KNOB_%s' % knob_3_index],
+                    'knob_1_index':knob_1_index,
+                    'knob_2_index':knob_2_index,
+                    'knob_3_index':knob_3_index,
                 }
 
                 actions = '''
                     {track_idx}/NAME "{track_name}";
                     {track_idx}/DEV("{dev_name}") DEL;
                     {track_idx}/ARM OFF;
+                    WAIT 2;
+                    
+                    BIND KNOB_{knob_1_index} "{knob_1_value}"/VOL;
+                    BIND KNOB_{knob_2_index} "{knob_2_value}"/VOL;
+                    BIND KNOB_{knob_3_index} "{knob_3_value}"/VOL;
+
+                    WAIT 1;
                     BIND FADER_{is_midi_suffix}{channel_first} NONE;
                 '''.format(**dictionary)
 
@@ -208,11 +240,11 @@ class MixerActions(UserActionsBase):
                     BIND KNOB_2 "[BASS]"/VOL
                     BIND KNOB_3 "[DRUMS]"/VOL
                     BIND KNOB_4 "[HITS]"/VOL
-                    BIND KNOB_5 "[MUSIC/KEYS]"/VOL
+                    BIND KNOB_5 "[MUSIC]"/VOL
                     BIND KNOB_6 "[VOX]"/VOL
                     BIND KNOB_7 "[ATMOSPHERE]"/VOL
                     BIND KNOB_8 "[FX]"/VOL
-                    BIND KNOB_9 "[ALIENS/GTR]"/VOL
+                    BIND KNOB_9 "[ALIENS]"/VOL
                     BIND KNOB_10 "[UP]"/VOL
                     BIND KNOB_11 "[REFERENCE]"/VOL
                     BIND KNOB_12 SEL/SEND A;

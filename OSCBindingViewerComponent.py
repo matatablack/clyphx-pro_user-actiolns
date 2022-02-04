@@ -74,7 +74,9 @@ class BindingObserver(ControlSurfaceComponent):
             # might be good to add this to bindings too.
             value_as_int = parameter_value_to_macro_value(self._control.parameter)
         # self._server.sendOSC('%s/value' % self._path, str(value_as_str))
-        self._server.sendOSC('%s/int' % self._path, int(value_as_int))
+        # self._server.sendOSC('%s/int' % self._path, int(value_as_int))
+        self._server.sendOSC('custom%s/value' % self._path, str(value_as_str))
+        self._server.sendOSC('custom%s/int' % self._path, int(value_as_int))
 
 
 class OSCBindingViewerComponent(CompoundComponent):
