@@ -51,14 +51,14 @@ class BindingObserver(ControlSurfaceComponent):
         track_name = self._control.binding_def.get('track').name if subject else None
         parameter_name = self._control.parameter_name if subject else None
         # self.canonical_parent.log_message(dumpobj())
-        self._server.sendOSC('/custom%s/track_name' % self._path, str(track_name))
-        self._server.sendOSC('/custom%s/parameter_name' % self._path, parameter_name)
+        self._server.sendOSC('custom%s/track_name' % self._path, str(track_name))
 
     @subject_slot('parameter_name')
     def _on_parameter_name_changed(self, name, _=None):
         if not live_object_is_valid(self._control.parameter):
             name = '-'
-        self._server.sendOSC('%s/name' % self._path, str(name))
+        # self._server.sendOSC('%s/name' % self._path, str(name))
+        self._server.sendOSC('custom%s/parameter_name' % self._path, str(name))
 
     @subject_slot('parameter_value')
     def _on_parameter_value_changed(self, value, _=None):
@@ -71,8 +71,8 @@ class BindingObserver(ControlSurfaceComponent):
             value_as_str = ''.join(char for char in value if ord(char) < 128)
             # might be good to add this to bindings too.
             value_as_int = parameter_value_to_macro_value(self._control.parameter)
-        self._server.sendOSC('%s/value' % self._path, str(value_as_str))
-        self._server.sendOSC('%s/int' % self._path, int(value_as_int))
+        # self._server.sendOSC('%s/value' % self._path, str(value_as_str))
+        # self._server.sendOSC('%s/int' % self._path, int(value_as_int))
 
 
 class OSCBindingViewerComponent(CompoundComponent):
