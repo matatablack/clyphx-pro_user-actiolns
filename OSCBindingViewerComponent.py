@@ -48,21 +48,23 @@ class BindingObserver(ControlSurfaceComponent):
             partial(self._on_parameter_value_changed, self._control.parameter_value))
 
         # self.canonical_parent.log_message(dumpobj(subject))
-        track_name = self._control.binding_def.get('track').name if subject else None
-        parameter_name = self._control.parameter_name if subject else None
+        track = self._control.binding_def.get('track') if subject else None
+        track_name = track.name if track else None
+        track_color = track.color if track else None
         # self.canonical_parent.log_message(dumpobj())
         self._server.sendOSC('custom%s/track_name' % self._path, str(track_name))
+        self._server.sendOSC('custom%s/track_color' % self._path, str(track_color))
 
     @subject_slot('parameter_name')
     def _on_parameter_name_changed(self, name, _=None):
         if not live_object_is_valid(self._control.parameter):
-            name = '-'
+            name = 'None'
         # self._server.sendOSC('%s/name' % self._path, str(name))
         self._server.sendOSC('custom%s/parameter_name' % self._path, str(name))
 
     @subject_slot('parameter_value')
     def _on_parameter_value_changed(self, value, _=None):
-        value_as_str = '-'
+        value_as_str = 'None'
         value_as_int = 0
         if live_object_is_valid(self._control.parameter):
             # this is needed as some parameter values include special characters that
@@ -72,7 +74,7 @@ class BindingObserver(ControlSurfaceComponent):
             # might be good to add this to bindings too.
             value_as_int = parameter_value_to_macro_value(self._control.parameter)
         # self._server.sendOSC('%s/value' % self._path, str(value_as_str))
-        # self._server.sendOSC('%s/int' % self._path, int(value_as_int))
+        self._server.sendOSC('%s/int' % self._path, int(value_as_int))
 
 
 class OSCBindingViewerComponent(CompoundComponent):
@@ -135,5 +137,5 @@ class OSCBindingViewerComponent(CompoundComponent):
     @subject_slot('name')
     def _on_device_name_changed(self):
         dev = self._song.view.selected_track.view.selected_device
-        name = dev.name if dev else '-'
+        name = dev.name if dev else 'None'
         self._device_name_element.send_value(str(name))

@@ -19,23 +19,23 @@ class MixerActions(UserActionsBase):
     dumpobj = dumpobj
 
     track_name_by_channel = { 
-        "1": "[1] Kick", 
-        "2": "[2] Minitaur", 
-        "3/4": "[3/4] Drums", 
-        "5": "[5] V. Bass", 
-        "6": "[6] SH01A", 
-        "7": "[7] TB3", 
-        "8": "[8] Grandmother", 
-        "9/10":"[9/10] Deepmind", 
-        "11/12":"[11/12] Roland Go", 
-        "13/14":"[13/14] Yamaha", 
-        "15": "[15] GTR", 
-        "16": "[16] MIC", 
-        "17/18":"[17/18] MASTER", 
-        "19/20":"[19/20] Space", 
-        "21/22":"[21/22] Timefactor",
-        "23/24":"[23/24] Deluge", 
-        "25/26": "[25/26] Pitchfactor"
+        "1": "Kick", 
+        "2": "Minitaur", 
+        "3/4": "Drums", 
+        "5": "V. Bass", 
+        "6": "SH01A", 
+        "7": "TB3", 
+        "8": "Grandmother", 
+        "9/10": "Deepmind", 
+        "11/12": "Roland Go", 
+        "13/14": "Yamaha", 
+        "15": "GTR", 
+        "16": "MIC", 
+        "17/18": "MASTER", 
+        "19/20": "Space", 
+        "21/22": "Timefactor",
+        "23/24": "Deluge", 
+        "25/26":  "Pitchfactor"
     }
 
     def add(self, action_def, args):
@@ -208,14 +208,14 @@ class MixerActions(UserActionsBase):
                     BIND KNOB_2 "[BASS]"/VOL
                     BIND KNOB_3 "[DRUMS]"/VOL
                     BIND KNOB_4 "[HITS]"/VOL
-                    BIND KNOB_5 "[MUSIC]"/VOL
+                    BIND KNOB_5 "[MUSIC/KEYS]"/VOL
                     BIND KNOB_6 "[VOX]"/VOL
                     BIND KNOB_7 "[ATMOSPHERE]"/VOL
                     BIND KNOB_8 "[FX]"/VOL
-                    BIND KNOB_9 "[ALIENS]"/VOL
+                    BIND KNOB_9 "[ALIENS/GTR]"/VOL
                     BIND KNOB_10 "[UP]"/VOL
                     BIND KNOB_11 "[REFERENCE]"/VOL
-                    BIND KNOB_12 SEL/PAN;
+                    BIND KNOB_12 SEL/SEND A;
 
                     BIND FADER_1 NONE;
                     BIND FADER_2 NONE;
