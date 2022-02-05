@@ -47,8 +47,8 @@ class BindingObserver(ControlSurfaceComponent):
         self._tasks.add(
             partial(self._on_parameter_value_changed, self._control.parameter_value))
 
-        # self.canonical_parent.log_message(dumpobj(subject))
         track = self._control.binding_def.get('track') if subject else None
+        # self.canonical_parent.log_message(dumpobj(track))
         track_name = track.name if track else None
         track_color = track.color if track else None
         # self.canonical_parent.log_message(dumpobj())
@@ -103,20 +103,34 @@ class OSCBindingViewerComponent(CompoundComponent):
         self._device_name_element = None
 
     def _do_init(self, cx_core):
+        log_bindings = False
         # need to use scheduling here as user actions are created before the OSC server
         # and binding components.
         server = cx_core.osc_server
-        bc = cx_core.get_binding_component(2) #XTB Script refers to A & H mixer   
+        bc = cx_core.get_binding_component(2) #XTB Script refers to A & H mixer  
         if server and bc:
             for i in xrange(bc.num_encoders):
                 enc = bc.get_encoder(i)
+                if log_bindings: self.canonical_parent.log_message(enc.name)
                 self.register_component(BindingObserver(server, '/%s' % enc.name, enc))
             for i in xrange(bc.num_buttons):
                 btn = bc.get_button(i)
+                if log_bindings: self.canonical_parent.log_message(btn.name)
                 self.register_component(BindingObserver(server, '/%s' % btn.name, btn))
-            # self._track_name_element = OSCElement(server, '/track/name')
-            # self._device_name_element = OSCElement(server, '/device/name')
-            # self.on_selected_track_changed()
+        bc = cx_core.get_binding_component(4) #XTE Script refers Launchpad  
+        if server and bc:
+            for i in xrange(bc.num_encoders):
+                enc = bc.get_encoder(i)
+                if log_bindings: self.canonical_parent.log_message(enc.name)
+                self.register_component(BindingObserver(server, '/%s' % enc.name, enc))
+            for i in xrange(bc.num_buttons):
+                btn = bc.get_button(i)
+                if log_bindings: self.canonical_parent.log_message(btn.name)
+                self.register_component(BindingObserver(server, '/%s' % btn.name, btn))
+        if server:
+            self._track_name_element = OSCElement(server, '/track/name')
+            self._device_name_element = OSCElement(server, '/device/name')
+            self.on_selected_track_changed()
 
     def on_selected_track_changed(self):
         if self._track_name_element and self._device_name_element:
