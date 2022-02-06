@@ -9,14 +9,13 @@ class MixerActions(UserActionsBase):
 
     def create_actions(self):
         self.add_global_action('mixer_add', self.add)
-        self.add_global_action('mixer_monitor', self.monitor)
-        self.add_global_action('daw_monitor', self.daw_monitor)
         self.add_track_action('mixer_assign', self.assign)
         self.add_track_action('mixer_unassign', self.unassign)
         self.add_global_action('mixer_unbind', self.unbind_all)
         self.add_track_action('mixer_arm_assigned', self.arm_assigned)
         self.add_global_action('set_target_bus', self.set_target_bus)
         self.add_global_action('left_channel_mono_utility', self.left_channel_mono_utility)
+        self.add_global_action('show_msg', self.show_msg)
 
 
     dumpobj = dumpobj
@@ -56,11 +55,23 @@ class MixerActions(UserActionsBase):
         "KNOB_12" : "SEL/SEND"
     }
 
+    bus_by_channel = {
+        "1/2" : "1",
+        "3/4" : "2",
+        "5/6" : "3",
+        "7/8" : "4",
+        "9/10" : "5",
+        "11/12" : "6",
+        "13/14" : "7",
+        "15/16" : "8"
+    }
+
     def add(self, action_def, args):
         try:
             args = args.split()
             channel = args[0]
             self.canonical_parent.log_message('-----ADD-----')
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_add %s"' % channel)      
             output_track = self.get_output_track_by_channel(channel)            
             dictionary = { 
                 'track_name': self.track_name_by_channel[channel],
@@ -98,6 +109,7 @@ class MixerActions(UserActionsBase):
     def assign(self, action_def, args):
         try:
             self.canonical_parent.log_message('-----ASSIGN-----')
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_assign %s"' % args)
             track = action_def['track']
             track_idx = list(self.song().tracks).index(track) + 1
             args = args.split()
@@ -107,7 +119,7 @@ class MixerActions(UserActionsBase):
             if '[->>' in track.name:
                     msg = 'Track Already Assigned'
                     self.canonical_parent.log_message(msg)
-                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"' % msg)
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"; show_msg "%s"' % (msg, msg))
                     return
                 
 
@@ -115,7 +127,7 @@ class MixerActions(UserActionsBase):
                 if '[->' in track.name:
                     msg = 'Track Already Assigned'
                     self.canonical_parent.log_message(msg)
-                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"' % msg)
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"; show_msg "%s"' % (msg, msg))
                     return
 
 
@@ -126,7 +138,7 @@ class MixerActions(UserActionsBase):
                 if len(tracks) > 0: 
                     msg = 'Channel Already Assigned to %s -> Unassigning' % tracks[0].name
                     self.canonical_parent.log_message(msg)
-                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"' % msg)
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"; show_msg "%s"' % (msg, msg))
                     self.canonical_parent.clyphx_pro_component.trigger_action_list('mixer_unassign midi %s' % fader_num)
                     return
                 elif '[->' in track.name: return
@@ -194,11 +206,11 @@ class MixerActions(UserActionsBase):
     def unassign(self, action_def, args):
         try:
             self.canonical_parent.log_message('-----UNASSIGN-----')
+            # self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_unassign %s"' % args)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_unassign %s"' % args)
             track = action_def['track']
             args = args.split() if args else []
             channel = args[0] if args else None
-
-            self.canonical_parent.log_message('-----1-----')
 
             assigned_prefix = '[->'
             assigned_prefix_2 = '[->>'
@@ -278,6 +290,7 @@ class MixerActions(UserActionsBase):
     def unbind_all(self, action_def, args):
         try:
             self.canonical_parent.log_message('-----UNBIND-----')
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_unbind %s"' % args)
             dictionary = { 
                 'track_idx': 0,
             }
@@ -346,6 +359,7 @@ class MixerActions(UserActionsBase):
     def arm_assigned(self, action_def, args):
         try:
             self.canonical_parent.log_message('-----ARM ALL ASSIGNED-----')
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "arm_all_assigned"')
             track = action_def['track']
             
             args = args.split()
@@ -372,6 +386,7 @@ class MixerActions(UserActionsBase):
         try:
             self.canonical_parent.log_message('-----set_target_bus-----')
             channel = args.split()[0] if args else None
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "set_target_bus %s"' % self.bus_by_channel[channel])
             self.target_bus = channel
             self.canonical_parent.log_message('TARGET BUS -----> %s' % channel)
             
@@ -381,6 +396,8 @@ class MixerActions(UserActionsBase):
     def left_channel_mono_utility(self, action_def, args):
         try:
             self.canonical_parent.log_message('-----left_channel_mono_utility-----')
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "left_channel_mono_utility"')            
+            if self.target_bus: self.canonical_parent.clyphx_pro_component.trigger_action_list('show_msg "%s BUS -> MONO (left)"' % self.bus_by_channel[self.target_bus])
             tracks = self.get_tracks_if_name_contains('[->>%s' % self.target_bus)
 
             if len(tracks) > 0:
@@ -400,47 +417,23 @@ class MixerActions(UserActionsBase):
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))        
 
-
-
-    def monitor(self, action_def, args):
+    def show_msg(self, action_def, args):
         try:
-            self.canonical_parent.log_message('-----MONITOR-----')
-            args = args.split()
-            track_channel_id = args[0]
-            monitor = args[1] == 'on'
+            self.canonical_parent.log_message('-----show_message-----')    
+            self.canonical_parent.log_message('message %s' % args)
+            dictionary = { 'message': args }
+            actions = '''
+                OSC STR custom/global/msg {message};
+                WAIT 12;
+                OSC STR custom/global/msg "---";
+            '''.format(**dictionary)
 
-            self.canonical_parent.log_message('track_channel_id: ' + track_channel_id)
-            self.canonical_parent.log_message('monitor: %s' % monitor)
-
-            tracks = self.get_tracks_if_name_contains('[%s]' % track_channel_id)
-            not_armed_tracks = filter(lambda track: track.arm != 1, tracks)
-            for track in not_armed_tracks:
-                track_idx = list(self.song().tracks).index(track) + 1
-                self.canonical_parent.log_message('track to apply mon: %s' % track.name)
-                self.canonical_parent.log_message('track idx: %s' % track_idx)
-                self.canonical_parent.clyphx_pro_component.trigger_action_list('%s/mixer_assign %s' % (track_idx, 'master' if monitor else 'prev'))            
+            self.canonical_parent.log_message(actions)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)            
+                
+            self.target_bus = None
         except BaseException as e:
-            self.canonical_parent.log_message('ERROR: ' + str(e))
-
-
-    def daw_monitor(self, action_def, args):
-        try:
-            self.canonical_parent.log_message('-----DAW MONITOR-----')
-            args = args.split()
-            track_channel_id = args[0].replace('"', "")
-            monitor = args[1] == 'on'
-
-            self.canonical_parent.log_message('track_channel_id: ' + track_channel_id)
-            self.canonical_parent.log_message('monitor: %s' % monitor)
-
-            tracks = self.get_tracks_if_name_contains('(%s)' % track_channel_id)
-            for track in tracks:
-                track_idx = list(self.song().tracks).index(track) + 1
-                self.canonical_parent.log_message('track to apply mon: %s' % track.name)
-                self.canonical_parent.log_message('track idx: %s' % track_idx)
-                self.canonical_parent.clyphx_pro_component.trigger_action_list('%s/DEV(1) P1 %s' % (track_idx, "127" if monitor else "0"))
-        except BaseException as e:
-            self.canonical_parent.log_message('ERROR: ' + str(e))
+            self.canonical_parent.log_message('ERROR: ' + str(e))        
 
 
     def get_track_channel(self, track):
