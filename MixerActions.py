@@ -195,21 +195,24 @@ class MixerActions(UserActionsBase):
         try:
             self.canonical_parent.log_message('-----UNASSIGN-----')
             track = action_def['track']
-            args = args.split()
+            args = args.split() if args else []
             channel = args[0] if args else None
+
+            self.canonical_parent.log_message('-----1-----')
 
             assigned_prefix = '[->'
             assigned_prefix_2 = '[->>'
 
             channel = args[0].strip() if args else None
             is_midi = True if channel == "midi" else False
-            midi_fader = args[1] if args else None
+            midi_fader = args[1] if len(args) > 1 else None
             channel = ' ' + channel + ' %s' % midi_fader if is_midi else channel
             
             if channel:
                 self.canonical_parent.log_message('PREFIX--> %s' % assigned_prefix + channel)
                 tracks = self.get_tracks_if_name_contains(assigned_prefix + channel)
                 tracks = tracks + self.get_tracks_if_name_contains(assigned_prefix_2 + channel)
+                
             else:
                 tracks = self.get_tracks_if_name_contains(assigned_prefix)
             self.canonical_parent.log_message('tracks qty: %s' % len(tracks))
