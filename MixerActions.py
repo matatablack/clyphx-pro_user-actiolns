@@ -400,37 +400,41 @@ class MixerActions(UserActionsBase):
                 actions = '''
                     {track_idx}/SEL;
                 '''.format(**dictionary)
-            
+                self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+        
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))        
 
+    mono_assigned_tracks = []
     def left_channel_mono_utility(self, action_def, args):
         try:
             self.canonical_parent.log_message('-----left_channel_mono_utility-----')
-            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "left_channel_mono_utility"')            
-            if self.target_bus: 
-                self.canonical_parent.clyphx_pro_component.trigger_action_list('show_msg "%s BUS -> MONO (left)"' % self.bus_by_channel[self.target_bus])
-            
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "left_channel_mono_utility"')                        
 
             self.canonical_parent.log_message('---TARGET BUS FROM MONO UTIL----> %s' % self.target_bus)
             tracks = self.get_tracks_if_name_contains('[->>%s' % self.target_bus)
             actions = ""
             if len(tracks) > 0:
-                track_idx = list(self.song().tracks).index(tracks[0]) + 1
-                dictionary = { 'track_idx': track_idx }
+                track = tracks[0]
+                track_idx = list(self.song().tracks).index(track) + 1
+                track_was_mono = True if track.name in self.mono_assigned_tracks else None
+        
+                load_or_delete = '/DEV("UtilityOnlyLeftChannel") DEL;' if track_was_mono else '/DEV("UtilityOnlyLeftChannel") DEL; LOADUSER "UtilityOnlyLeftChannel.adv";'
+                dictionary = { 'track_idx': track_idx, 'load_or_delete': load_or_delete}
                 actions = '''
                     {track_idx}/SEL;
-                    {track_idx}/DEV("UtilityOnlyLeftChannel") DEL;
-                    LOADUSER "UtilityOnlyLeftChannel.adv"; 
+                    {track_idx}{load_or_delete}
                 '''.format(**dictionary)
-            else:
-                self.canonical_parent.log_message('--no track founded for target bus -> %s ---' % self.target_bus)
 
-
+                self.canonical_parent.clyphx_pro_component.trigger_action_list('show_msg "%s BUS -> MONO %s"' % (self.bus_by_channel[self.target_bus], 'OFF' if track_was_mono else 'ON'))
+                if not track_was_mono: self.mono_assigned_tracks.append(track.name)
+                else: self.mono_assigned_tracks.remove(track.name)
+                self.target_bus = None
                 self.canonical_parent.log_message(actions)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)            
+            else:
+                self.canonical_parent.log_message('--no track founded for target bus -> %s ---' % self.target_bus)
                 
-            self.target_bus = None
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))        
 
