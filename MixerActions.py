@@ -158,6 +158,9 @@ class MixerActions(UserActionsBase):
                     SEL/MUTE OFF;
                     SEL/NAME "{track_name}";
                     BIND FADER_MIDI_{fader_num} "{track_name}"/VOL;
+                    BIND lp_arm_MIDI_{fader_num} "{track_name}"/ARM;
+                    BIND lp_solo_MIDI_{fader_num} "{track_name}"/SOLO;
+                    BIND lp_track_mute_MIDI_{fader_num} "{track_name}"/MUTE;
                     BIND KNOB_{knob_1_index} "{track_name}"/PAN;
                     BIND KNOB_{knob_2_index} "{track_name}"/SEND B;
                     BIND KNOB_{knob_3_index} "{track_name}"/SEND A;
@@ -195,6 +198,7 @@ class MixerActions(UserActionsBase):
                     SEL/NAME "{return_track_name}";
                     BIND lp_arm_{channel_first} "{return_track_name}"/ARM;
                     BIND lp_solo_{channel_first} "{return_track_name}"/SOLO;
+                    BIND lp_track_mute_{channel_first} "{return_track_name}"/MUTE;
                     BIND FADER_{channel_first} "{return_track_name}"/VOL;
                 '''.format(**dictionary)
                 self.canonical_parent.log_message(actions)
@@ -280,8 +284,9 @@ class MixerActions(UserActionsBase):
                     {knob_3_message}
                     WAIT 1;
                     BIND FADER_{is_midi_suffix}{channel_first} NONE;
-                    BIND lp_arm_{channel_first} NONE;
-                    BIND lp_solo_{channel_first} NONE;
+                    BIND lp_arm_{is_midi_suffix}{channel_first} NONE;
+                    BIND lp_solo_{is_midi_suffix}{channel_first} NONE;
+                    BIND lp_track_mute_{is_midi_suffix}{channel_first} NONE;
                 '''.format(**dictionary)
 
                 self.canonical_parent.log_message(actions)
@@ -341,6 +346,10 @@ class MixerActions(UserActionsBase):
                     BIND lp_arm_11 NONE;
                     BIND lp_arm_13 NONE;
                     BIND lp_arm_15 NONE;
+                    BIND lp_arm_MIDI_1 NONE;
+                    BIND lp_arm_MIDI_2 NONE;
+                    BIND lp_arm_MIDI_3 NONE;
+                    BIND lp_arm_MIDI_4 NONE;
 
                     BIND lp_solo_1 "[KICK]"/SOLO ;
                     BIND lp_solo_3 "[BASS]"/SOLO;
@@ -350,6 +359,23 @@ class MixerActions(UserActionsBase):
                     BIND lp_solo_11 "[VOX]"/SOLO;
                     BIND lp_solo_13 "[ATMOSPHERE]"/SOLO;
                     BIND lp_solo_15 "[FX]"/SOLO;
+                    BIND lp_solo_MIDI_1 NONE;
+                    BIND lp_solo_MIDI_2 NONE;
+                    BIND lp_solo_MIDI_3 NONE;
+                    BIND lp_solo_MIDI_4 NONE;
+
+                    BIND lp_track_mute_1 NONE;
+                    BIND lp_track_mute_3 NONE;
+                    BIND lp_track_mute_5 NONE;
+                    BIND lp_track_mute_7 NONE;
+                    BIND lp_track_mute_9 NONE;
+                    BIND lp_track_mute_11 NONE;
+                    BIND lp_track_mute_13 NONE;
+                    BIND lp_track_mute_15 NONE;
+                    BIND lp_track_mute_MIDI_1 NONE;
+                    BIND lp_track_mute_MIDI_2 NONE;
+                    BIND lp_track_mute_MIDI_3 NONE;
+                    BIND lp_track_mute_MIDI_4 NONE;
 
             '''.format(**dictionary)
 
