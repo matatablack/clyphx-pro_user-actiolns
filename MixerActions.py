@@ -1,9 +1,7 @@
 
 from ClyphX_Pro.clyphx_pro.UserActionsBase import UserActionsBase
-from utils.getters import selected_track 
 from utils.log_utils import dumpobj
 import re
-import time
 
 class MixerActions(UserActionsBase):
 
@@ -16,6 +14,7 @@ class MixerActions(UserActionsBase):
         self.add_global_action('set_target_bus', self.set_target_bus)
         self.add_global_action('left_channel_mono_utility', self.left_channel_mono_utility)
         self.add_global_action('show_msg', self.show_msg)
+        self.add_global_action('mixer_finish_execution', self.finish_execution)
 
 
     dumpobj = dumpobj
@@ -66,12 +65,32 @@ class MixerActions(UserActionsBase):
         "15/16" : "8",
         "midi": "midi"
     }
+    
+
+    is_execution_blocked = False
+    current_action = None
+    def check_thread_avalability_and_block(self, action_to_execute, args):
+        action = "%s %s" % (action_to_execute, args)
+        self.canonical_parent.log_message('trying to execute ---> [%s]' % action)
+        if self.is_execution_blocked:
+            msg = "Blocked, still executing [%s] action" % (self.current_action)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"' % msg)
+            raise Exception(msg)
+        else:
+            self.current_action = action
+            self.is_execution_blocked = True
+
+    def finish_execution(self, action_def, args):
+        self.is_execution_blocked = False
+        self.current_action = None
+        self.canonical_parent.log_message('Unblocking...')
+        return
 
     def add(self, action_def, args):
         try:
+            self.check_thread_avalability_and_block('add', args)
             args = args.split()
             channel = args[0]
-            self.canonical_parent.log_message('-----ADD-----')
             self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_add %s"' % channel)      
             output_track = self.get_output_track_by_channel(channel)            
             dictionary = { 
@@ -82,6 +101,7 @@ class MixerActions(UserActionsBase):
             }
     
             actions = '''
+                OSC STR custom/global/msg 'Add {track_name}';
                 ADDAUDIO;
                 WAIT 1;
                 SEL/NAME "{track_name}";
@@ -92,11 +112,12 @@ class MixerActions(UserActionsBase):
                 SEL/MON OFF;
                 SEL/COLOR {color_index};
                 SEL/ARM;
+                mixer_finish_execution;
+                OSC STR custom/global/msg "---";
             '''.format(**dictionary)
             
             self.canonical_parent.log_message(actions)
             self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
-
 
             
         except BaseException as e:
@@ -109,7 +130,7 @@ class MixerActions(UserActionsBase):
     """
     def assign(self, action_def, args):
         try:
-            self.canonical_parent.log_message('-----ASSIGN-----')
+            self.check_thread_avalability_and_block('assign', args)
             track = action_def['track']
             track_idx = list(self.song().tracks).index(track) + 1
             args = args.split()
@@ -119,7 +140,7 @@ class MixerActions(UserActionsBase):
             self.canonical_parent.log_message('channel---> %s' % channel)
             if args and channel: self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_assign %s"' % self.bus_by_channel[channel])
 
-            if '[->>' in track.name:
+            if '[->>' in track.name and not is_midi:
                     msg = 'Track Already Assigned'
                     self.canonical_parent.log_message(msg)
                     self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"; show_msg "%s"' % (msg, msg))
@@ -164,6 +185,7 @@ class MixerActions(UserActionsBase):
                     BIND KNOB_{knob_1_index} "{track_name}"/PAN;
                     BIND KNOB_{knob_2_index} "{track_name}"/SEND B;
                     BIND KNOB_{knob_3_index} "{track_name}"/SEND A;
+                    mixer_finish_execution
                 '''.format(**dictionary)
                 self.canonical_parent.log_message(actions)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
@@ -200,6 +222,7 @@ class MixerActions(UserActionsBase):
                     BIND lp_solo_{channel_first} "{return_track_name}"/SOLO;
                     BIND lp_track_mute_{channel_first} "{return_track_name}"/MUTE;
                     BIND FADER_{channel_first} "{return_track_name}"/VOL;
+                    mixer_finish_execution
                 '''.format(**dictionary)
                 self.canonical_parent.log_message(actions)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
@@ -212,7 +235,7 @@ class MixerActions(UserActionsBase):
 
     def unassign(self, action_def, args):
         try:
-            self.canonical_parent.log_message('-----UNASSIGN-----')
+            self.check_thread_avalability_and_block('unassign', args)
             # self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_unassign %s"' % args)
             track = action_def['track']
             args = args.split() if args else []
@@ -287,6 +310,8 @@ class MixerActions(UserActionsBase):
                     BIND lp_arm_{is_midi_suffix}{channel_first} NONE;
                     BIND lp_solo_{is_midi_suffix}{channel_first} NONE;
                     BIND lp_track_mute_{is_midi_suffix}{channel_first} NONE;
+                    BIND lp_track_mono_util_{is_midi_suffix}{channel_first} NONE;
+                    mixer_finish_execution;
                 '''.format(**dictionary)
 
                 self.canonical_parent.log_message(actions)
@@ -297,7 +322,7 @@ class MixerActions(UserActionsBase):
 
     def unbind_all(self, action_def, args):
         try:
-            self.canonical_parent.log_message('-----UNBIND-----')
+            self.check_thread_avalability_and_block('unbind_all', args)
             self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_unbind %s"' % args)
             dictionary = { 
                 'track_idx': 0,
@@ -349,7 +374,7 @@ class MixerActions(UserActionsBase):
                     BIND lp_arm_MIDI_1 NONE;
                     BIND lp_arm_MIDI_2 NONE;
                     BIND lp_arm_MIDI_3 NONE;
-                    BIND lp_arm_MIDI_4 NONE;
+                    BIND lp_arm_MIDI_4 SEL/ARM;
 
                     BIND lp_solo_1 "[KICK]"/SOLO ;
                     BIND lp_solo_3 "[BASS]"/SOLO;
@@ -362,7 +387,7 @@ class MixerActions(UserActionsBase):
                     BIND lp_solo_MIDI_1 NONE;
                     BIND lp_solo_MIDI_2 NONE;
                     BIND lp_solo_MIDI_3 NONE;
-                    BIND lp_solo_MIDI_4 NONE;
+                    BIND lp_solo_MIDI_4 SEL/SOLO;
 
                     BIND lp_track_mute_1 NONE;
                     BIND lp_track_mute_3 NONE;
@@ -375,8 +400,19 @@ class MixerActions(UserActionsBase):
                     BIND lp_track_mute_MIDI_1 NONE;
                     BIND lp_track_mute_MIDI_2 NONE;
                     BIND lp_track_mute_MIDI_3 NONE;
-                    BIND lp_track_mute_MIDI_4 NONE;
+                    BIND lp_track_mute_MIDI_4 SEL/MUTE;
 
+                    BIND lp_track_mono_util_1 NONE;
+                    BIND lp_track_mono_util_3 NONE;
+                    BIND lp_track_mono_util_5 NONE;
+                    BIND lp_track_mono_util_7 NONE;
+                    BIND lp_track_mono_util_9 NONE;
+                    BIND lp_track_mono_util_11 NONE;
+                    BIND lp_track_mono_util_13 NONE;
+                    BIND lp_track_mono_util_15 NONE;
+                    BIND lp_track_mono_util_MIDI_4 SEL/DEV("UtilityOnlyLeftChannel") "Device On";
+
+                    mixer_finish_execution;
             '''.format(**dictionary)
 
             self.canonical_parent.log_message(actions)
@@ -387,13 +423,11 @@ class MixerActions(UserActionsBase):
 
     def arm_assigned(self, action_def, args):
         try:
-            self.canonical_parent.log_message('-----ARM ALL ASSIGNED-----')
+            self.check_thread_avalability_and_block('arm_assigned', args)
             self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "arm_all_assigned"')
             track = action_def['track']
             
             args = args.split()
-            # channel = args[0]
-
             assigned_prefix = '[->>'
             tracks = self.get_tracks_if_name_contains(assigned_prefix)
             self.canonical_parent.log_message('tracks qty: %s' % len(tracks))
@@ -401,7 +435,10 @@ class MixerActions(UserActionsBase):
             for track in tracks:
                 track_idx = list(self.song().tracks).index(track) + 1 
                 dictionary = { 'track_idx': track_idx }
-                actions = '''{track_idx}/ARM ON;'''.format(**dictionary)
+                actions = '''
+                    {track_idx}/ARM ON;
+                    mixer_finish_execution;
+                '''.format(**dictionary)
 
                 self.canonical_parent.log_message(actions)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
@@ -413,7 +450,7 @@ class MixerActions(UserActionsBase):
     target_bus = None
     def set_target_bus(self, action_def, args):
         try:
-            self.canonical_parent.log_message('-----set_target_bus-----')
+            self.check_thread_avalability_and_block('set_target_bus', args)
             channel = args.split()[0] if args else None
             self.target_bus = str(channel)
             self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "set_target_bus %s"' % self.bus_by_channel[channel])
@@ -425,6 +462,7 @@ class MixerActions(UserActionsBase):
                 dictionary = { 'track_idx': track_idx }
                 actions = '''
                     {track_idx}/SEL;
+                    mixer_finish_execution;
                 '''.format(**dictionary)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
         
@@ -434,7 +472,7 @@ class MixerActions(UserActionsBase):
     mono_assigned_tracks = []
     def left_channel_mono_utility(self, action_def, args):
         try:
-            self.canonical_parent.log_message('-----left_channel_mono_utility-----')
+            self.check_thread_avalability_and_block('left_channel_mono_utility', args)
             self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "left_channel_mono_utility"')                        
 
             self.canonical_parent.log_message('---TARGET BUS FROM MONO UTIL----> %s' % self.target_bus)
@@ -446,10 +484,13 @@ class MixerActions(UserActionsBase):
                 track_was_mono = True if track.name in self.mono_assigned_tracks else None
         
                 load_or_delete = '/DEV("UtilityOnlyLeftChannel") DEL;' if track_was_mono else '/DEV("UtilityOnlyLeftChannel") DEL; LOADUSER "UtilityOnlyLeftChannel.adv";'
-                dictionary = { 'track_idx': track_idx, 'load_or_delete': load_or_delete}
+                dictionary = { 'track_idx': track_idx, 'load_or_delete': load_or_delete, 'channel_first': self.target_bus.split('/')[0]}
                 actions = '''
                     {track_idx}/SEL;
-                    {track_idx}{load_or_delete}
+                    {track_idx}{load_or_delete};
+                    WAIT 2;
+                    BIND lp_track_mono_util_{channel_first} {track_idx}/DEV("UtilityOnlyLeftChannel") "Device On";
+                    mixer_finish_execution;
                 '''.format(**dictionary)
 
                 self.canonical_parent.clyphx_pro_component.trigger_action_list('show_msg "%s BUS -> MONO %s"' % (self.bus_by_channel[self.target_bus], 'OFF' if track_was_mono else 'ON'))
