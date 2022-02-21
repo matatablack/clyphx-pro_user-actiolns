@@ -143,7 +143,7 @@ class MixerActions(UserActionsBase):
             if '[->>' in track.name and not is_midi:
                     msg = 'Track Already Assigned'
                     self.canonical_parent.log_message(msg)
-                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"; show_msg "%s"' % (msg, msg))
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('mixer_finish_execution; msg "%s"; show_msg "%s";' % (msg, msg))
                     return
                 
 
@@ -151,7 +151,7 @@ class MixerActions(UserActionsBase):
                 if '[->' in track.name:
                     msg = 'Track Already Assigned'
                     self.canonical_parent.log_message(msg)
-                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"; show_msg "%s"' % (msg, msg))
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('mixer_finish_execution; msg "%s"; show_msg "%s";' % (msg, msg))
                     return
 
 
@@ -163,9 +163,11 @@ class MixerActions(UserActionsBase):
                     msg = 'Channel Already Assigned to %s -> Unassigning' % tracks[0].name
                     self.canonical_parent.log_message(msg)
                     self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"; show_msg "%s"' % (msg, msg))
-                    self.canonical_parent.clyphx_pro_component.trigger_action_list('mixer_unassign midi %s' % fader_num)
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('mixer_finish_execution; mixer_unassign midi %s;' % fader_num)
                     return
-                elif '[->' in track.name: return
+                elif '[->' in track.name: 
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('mixer_finish_execution;')
+                    return
                 
                 dictionary = { 
                     'track_idx': track_idx,
@@ -182,10 +184,11 @@ class MixerActions(UserActionsBase):
                     BIND lp_arm_MIDI_{fader_num} "{track_name}"/ARM;
                     BIND lp_solo_MIDI_{fader_num} "{track_name}"/SOLO;
                     BIND lp_track_mute_MIDI_{fader_num} "{track_name}"/MUTE;
+                    BIND lp_track_mono_util_MIDI_{fader_num} "{track_name}"/DEV("UtilityOnlyLeftChannel") "Device On";
                     BIND KNOB_{knob_1_index} "{track_name}"/PAN;
                     BIND KNOB_{knob_2_index} "{track_name}"/SEND B;
                     BIND KNOB_{knob_3_index} "{track_name}"/SEND A;
-                    mixer_finish_execution
+                    mixer_finish_execution;
                 '''.format(**dictionary)
                 self.canonical_parent.log_message(actions)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
@@ -195,7 +198,7 @@ class MixerActions(UserActionsBase):
                 if len(tracks) > 0: 
                     msg = 'Channel Already Assigned to %s' % tracks[0].name
                     self.canonical_parent.log_message(msg)
-                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"' % msg)
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list('msg "%s"; mixer_finish_execution;' % msg)
                     return
                 
                 track_name = ("%s %s" % (track.name.split(assigned_to)[0], assigned_to)).strip()
@@ -207,7 +210,7 @@ class MixerActions(UserActionsBase):
                     'channel_first': channel.split('/')[0],
                     'origin_track_color_index': track.color_index + 1,
                     'return_track_name': '>' + track_name.split('[->')[0] + '[->>' + channel + ']'
-                }       
+                }
                 actions = '''
                     SEL/MUTE ON;
                     SEL/NAME "{track_name}";
@@ -221,6 +224,7 @@ class MixerActions(UserActionsBase):
                     BIND lp_arm_{channel_first} "{return_track_name}"/ARM;
                     BIND lp_solo_{channel_first} "{return_track_name}"/SOLO;
                     BIND lp_track_mute_{channel_first} "{return_track_name}"/MUTE;
+                    BIND lp_track_mono_util_{channel_first} "{return_track_name}"/DEV("UtilityOnlyLeftChannel") "Device On";
                     BIND FADER_{channel_first} "{return_track_name}"/VOL;
                     mixer_finish_execution
                 '''.format(**dictionary)
@@ -437,11 +441,12 @@ class MixerActions(UserActionsBase):
                 dictionary = { 'track_idx': track_idx }
                 actions = '''
                     {track_idx}/ARM ON;
-                    mixer_finish_execution;
                 '''.format(**dictionary)
 
                 self.canonical_parent.log_message(actions)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+            
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('mixer_finish_execution;')
             
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))
@@ -462,14 +467,14 @@ class MixerActions(UserActionsBase):
                 dictionary = { 'track_idx': track_idx }
                 actions = '''
                     {track_idx}/SEL;
-                    mixer_finish_execution;
                 '''.format(**dictionary)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('mixer_finish_execution;')
         
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))        
 
-    mono_assigned_tracks = []
     def left_channel_mono_utility(self, action_def, args):
         try:
             self.check_thread_avalability_and_block('left_channel_mono_utility', args)
@@ -481,7 +486,11 @@ class MixerActions(UserActionsBase):
             if len(tracks) > 0:
                 track = tracks[0]
                 track_idx = list(self.song().tracks).index(track) + 1
-                track_was_mono = True if track.name in self.mono_assigned_tracks else None
+                track_was_mono = None
+
+                for device in track.devices:
+                    if device.name == "UtilityOnlyLeftChannel":
+                        track_was_mono = True #if device.is_active else None
         
                 load_or_delete = '/DEV("UtilityOnlyLeftChannel") DEL;' if track_was_mono else '/DEV("UtilityOnlyLeftChannel") DEL; LOADUSER "UtilityOnlyLeftChannel.adv";'
                 dictionary = { 'track_idx': track_idx, 'load_or_delete': load_or_delete, 'channel_first': self.target_bus.split('/')[0]}
@@ -494,16 +503,16 @@ class MixerActions(UserActionsBase):
                 '''.format(**dictionary)
 
                 self.canonical_parent.clyphx_pro_component.trigger_action_list('show_msg "%s BUS -> MONO %s"' % (self.bus_by_channel[self.target_bus], 'OFF' if track_was_mono else 'ON'))
-                if not track_was_mono: self.mono_assigned_tracks.append(track.name)
-                else: self.mono_assigned_tracks.remove(track.name)
+
                 self.target_bus = None
                 self.canonical_parent.log_message(actions)
-                self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)            
+                self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
             else:
-                self.canonical_parent.log_message('--no track founded for target bus -> %s ---' % self.target_bus)
+                self.canonical_parent.log_message('---> no track found for target bus -> %s ---' % self.target_bus)
+                self.canonical_parent.clyphx_pro_component.trigger_action_list('mixer_finish_execution')
                 
         except BaseException as e:
-            self.canonical_parent.log_message('ERROR: ' + str(e))        
+            self.canonical_parent.log_message('ERROR: ' + str(e))
 
     def show_msg(self, action_def, args):
         try:
