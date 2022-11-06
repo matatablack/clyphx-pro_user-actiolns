@@ -29,6 +29,24 @@ class TemplateBase:
     def _select_process_step_track(self, process_step):
         self.trigger('"%s"/SEL' % (get.track_prefix(self) + ' ' + process_step.capitalize()))
 
+    # def set_macros(self, _, args):
+    #     try:
+    #         trigger = self.canonical_parent.clyphx_pro_component.trigger_action_list
+            
+
+    #         splitedArgs = args.split()
+    #         prefix = splitedArgs[0]
+    #         page_name = splitedArgs[1]
+            
+    #         self.log("-------------------SETTING MACROS------------------")
+    #         for i in xrange(1, NUM_X_CONTROLS):
+    #             res = '${prefix}{index}$=${prefix}{index}_{page_name}$'.format(prefix=prefix, index=i, page_name=page_name)
+    #             self.log(res)
+    #             self.trigger(res)
+    #     except BaseException as e:
+    #         self.log('ERROR: ' + str(e))
+
+
     def toggle_rack_for_drum_part(self):
         self._init_func('toggle_rack_for_drum_part', debug=True)
         try:
@@ -320,7 +338,7 @@ class TemplateBase:
                 SEL/CLIP(SEL) NAME "{new_clip_name}"
             '''.format(**d)
 
-            self.trigger(actions)
+            # self.trigger(actions)
 
             self._stop_action_exec()
         except BaseException as e:
@@ -351,9 +369,10 @@ class TemplateBase:
     def bind(self, control_mode_name):
         try:
             self._init_func('bind', debug=True)
+            self.log('Abount to bind midi fithter to %s' % control_mode_name)
             if control_modes_defs[control_mode_name]:
                 self.trigger(control_modes_defs[control_mode_name]["binding"])
-                # self.mf.set_color_schema(control_modes_defs[control_mode_name]["color_schema"])
+                self.mf.set_color_schema(control_modes_defs[control_mode_name]["color_schema"])
             self._stop_action_exec()
         except BaseException as e:
             self.log('ERROR: ' + str(e))
@@ -402,8 +421,6 @@ class TemplateBase:
             self._stop_action_exec()
         except BaseException as e:
             self.log('ERROR: ' + str(e))
-
-
 
 
     def change_bank(self, bank):

@@ -3,6 +3,8 @@ from ClyphX_Pro.clyphx_pro.UserActionsBase import UserActionsBase
 from utils.log_utils import dumpobj
 import re
 
+NUM_X_CONTROLS = 100
+
 class MixerActions(UserActionsBase):
 
     def create_actions(self):
@@ -14,7 +16,12 @@ class MixerActions(UserActionsBase):
         self.add_global_action('set_target_bus', self.set_target_bus)
         self.add_global_action('left_channel_mono_utility', self.left_channel_mono_utility)
         self.add_global_action('show_msg', self.show_msg)
+        self.add_global_action('show_control_mode', self.show_control_mode)
         self.add_global_action('mixer_finish_execution', self.finish_execution)
+        self.add_global_action('set_mf_binding', self.set_mf_binding)
+        self.add_global_action('set_mixer_midi_volumes_binding', self.set_mixer_midi_volumes_binding)
+        self.add_global_action('record', self.record)
+        self.add_global_action('set_record_length', self.set_record_length)
 
 
     dumpobj = dumpobj
@@ -28,7 +35,7 @@ class MixerActions(UserActionsBase):
         "7": "TB3", 
         "8": "Grandmother", 
         "9/10": "Deepmind", 
-        "11/12": "Roland Go", 
+        "11/12": "Kurz", 
         "13/14": "Yamaha", 
         "15": "GTR", 
         "16": "MIC", 
@@ -86,43 +93,172 @@ class MixerActions(UserActionsBase):
         self.canonical_parent.log_message('Unblocking...')
         return
 
+    is_adding_midi = False
+    def set_add_midi(self, action_def, args):
+        args = args.split()
+        value = args[0]
+        self.is_adding_midi = True if value == "1" else False
+        
+
     def add(self, action_def, args):
         try:
             self.check_thread_avalability_and_block('add', args)
             args = args.split()
             channel = args[0]
             self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "mixer_add %s"' % channel)      
-            output_track = self.get_output_track_by_channel(channel)            
-            dictionary = { 
-                'track_name': self.track_name_by_channel[channel],
-                'track_channel': channel,
-                'output': output_track.name,
-                'color_index': output_track.color_index + 1
-            }
-    
-            actions = '''
-                OSC STR custom/global/msg 'Add {track_name}';
-                ADDAUDIO;
-                WAIT 1;
-                SEL/NAME "{track_name}";
-                SEL/IN "Ext. In";
-                WAIT 1;
-                SEL/INSUB "{track_channel}";
-                WAIT 1;
-                SEL/MON OFF;
-                SEL/COLOR {color_index};
-                SEL/ARM;
-                mixer_finish_execution;
-                OSC STR custom/global/msg "---";
-            '''.format(**dictionary)
-            
-            self.canonical_parent.log_message(actions)
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
 
+            if not self.is_adding_midi:
+                output_track = self.get_output_track_by_channel(channel)
+                dictionary = { 
+                    'track_name': self.track_name_by_channel[channel],
+                    'track_channel': channel,
+                    'output': output_track.get("name"),
+                    'color_index': output_track.get("color_index") + 1
+                }
+        
+                actions = '''
+                    OSC STR custom/global/msg 'Add {track_name}';
+                    ADDAUDIO;
+                    WAIT 1;
+                    SEL/NAME "{track_name}";
+                    SEL/IN "Ext. In";
+                    WAIT 1;
+                    SEL/INSUB "{track_channel}";
+                    WAIT 1;
+                    SEL/MON OFF;
+                    SEL/COLOR {color_index};
+                    SEL/ARM;
+                    mixer_finish_execution;
+                    OSC STR custom/global/msg "---";
+                '''.format(**dictionary)
+                
+                self.canonical_parent.log_message(actions)
+                self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+            else:
+                output_track = self.get_tracks_if_name_contains("(%s)(midi)" % channel)[0]
+                dictionary = { 
+                    'track_name': self.track_name_by_channel[channel] + " [m]",
+                    'track_channel': channel,
+                    'output': output_track.get("name"),
+                    'color_index': output_track.get("color_index") + 1
+                }
+        
+                actions = '''
+                    OSC STR custom/global/msg 'Add {track_name}';
+                    ADDAUDIO;
+                    WAIT 1;
+                    SEL/NAME "{track_name}";
+                    SEL/IN "Ext. In";
+                    WAIT 1;
+                    SEL/INSUB "{track_channel}";
+                    WAIT 1;
+                    SEL/MON OFF;
+                    SEL/COLOR {color_index};
+                    SEL/ARM;
+                    mixer_finish_execution;
+                    OSC STR custom/global/msg "---";
+                '''.format(**dictionary)
+                
+                self.canonical_parent.log_message(actions)
+                self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
             
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))
 
+        """
+        @MidiFighter
+        change MF control mode (defs.py)
+    """
+    
+    def set_mf_binding(self, action_def, args):
+        try:
+            # self.check_thread_avalability_and_block('set_binding', args)
+            args = args.split()
+            control_mode_name = args[0]
+
+            dictionary = { 
+                'control_mode_name': control_mode_name,
+            }
+            actions = '''                  
+                    OSC STR custom/global/action "set_binding";
+                    tpl bind {control_mode_name};
+            '''.format(**dictionary)
+
+            self.canonical_parent.log_message(actions)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+
+            self.canonical_parent.log_message('ASSIGNING MACROS for %s' % control_mode_name)
+            for i in xrange(1, NUM_X_CONTROLS):
+                res = '${prefix}{index}$=${prefix}{index}_{footer}$'.format(prefix="mf_b1_s", index=i, footer=control_mode_name)
+                self.canonical_parent.clyphx_pro_component.trigger_action_list(res)
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    record_length = 2
+    def set_record_length(self, action_def, args):
+        try:
+            args = args.split()
+            self.record_length = args[0]
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+        
+    def record(self, action_def, args):
+        try:
+            # self.check_thread_avalability_and_block('record', args)
+            args = args.split('"')
+            channel_name = args[1]
+
+            dictionary = { 
+                'channel_name': channel_name,
+                'fixed_rec_bars': 2
+            }
+            actions = '''        
+                "{channel_name}"/ARM ON;
+                RECFIX {fixed_rec_bars} EMPTY;
+                WAITS {fixed_rec_bars}B;
+                "{channel_name}"/ARM OFF;
+            '''.format(**dictionary)
+
+            self.canonical_parent.log_message(actions)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    def set_mixer_midi_volumes_binding(self, action_def, args):
+        try:
+            # self.canonical_parent.log_message("TRYING set_mixer_midi_volumes_binding")
+            self.check_thread_avalability_and_block('set_mixer_midi_volumes_binding', args)
+            
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "set_mixer_midi_volumes_binding"')
+            mixer_daw_volumes = """
+                BIND FADER_1 "Kick"/VOL;
+                BIND FADER_2 "Minitaur"/VOL;
+                BIND FADER_3 "Drums"/VOL;
+                BIND FADER_4 "Omni 1"/VOL;
+                BIND FADER_5 "V. Bass"/VOL;
+                BIND FADER_6 "SH01A"/VOL;
+                BIND FADER_7 "TB3"/VOL;
+                BIND FADER_8 "Grandmother"/VOL;
+                BIND FADER_9 "Deepmind"/VOL;
+                BIND FADER_10 "Omni 2"/VOL;
+                BIND FADER_11 "GTR VOX"/VOL;
+                BIND FADER_12 "BASS COMP"/VOL;
+                BIND FADER_13 "Yamaha"/VOL;
+                BIND FADER_14 "Omni 3"/VOL;
+                BIND FADER_15 "GTR"/VOL;
+                BIND FADER_16 "MIC"/VOL;
+
+                BIND FADER_MIDI_1 "Omni 4"/VOL;
+                BIND FADER_MIDI_2 "Deluge"/VOL;
+                BIND FADER_MIDI_3 "Space"/VOL;
+                BIND FADER_MIDI_4 "Timefactor"/VOL;
+                mixer_finish_execution;
+            """
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(mixer_daw_volumes)
+
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
 
 
     """
@@ -262,6 +398,9 @@ class MixerActions(UserActionsBase):
             else:
                 tracks = self.get_tracks_if_name_contains(assigned_prefix)
             self.canonical_parent.log_message('tracks qty: %s' % len(tracks))
+
+            if len(tracks) == 0:
+                self.canonical_parent.clyphx_pro_component.trigger_action_list("mixer_finish_execution;")
             
             for track in tracks:
                 self.canonical_parent.log_message('unassining track %s' % track.name)
@@ -529,7 +668,22 @@ class MixerActions(UserActionsBase):
             self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)            
                 
         except BaseException as e:
-            self.canonical_parent.log_message('ERROR: ' + str(e))        
+            self.canonical_parent.log_message('ERROR: ' + str(e))      
+
+    def show_control_mode(self, action_def, args):
+        try:
+            self.canonical_parent.log_message('-----show control mode-----')    
+            self.canonical_parent.log_message('message %s' % args)
+            dictionary = { 'message': args }
+            actions = '''
+                OSC STR custom/global/control_mode {message};
+            '''.format(**dictionary)
+
+            self.canonical_parent.log_message(actions)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)            
+                
+        except BaseException as e:
+            self.canonical_parent.log_message('ERROR: ' + str(e))    
 
 
     def get_track_channel(self, track):
@@ -549,11 +703,32 @@ class MixerActions(UserActionsBase):
         return result_tracks
 
     def get_output_track_by_channel(self, channel):
-        return self.get_tracks_if_name_contains("(%s)" % channel)[0]
+        input_tracks_names_and_colors = { 
+            '1': { 'name': 'Kick', 'color_index': 17 },
+            '2': { 'name': 'Minitaur', 'color_index': 69 },
+            '3/4': { 'name': 'Drums', 'color_index': 17 },
+            '5': { 'name': 'V. Bass', 'color_index' : 27 },
+            '6': { 'name': 'SH01A', 'color_index': 50 },
+            '7': { 'name': 'TB3', 'color_index': 9 },
+            '8': { 'name': 'Grandmother', 'color_index': 25 },
+            '9/10': { 'name': 'Deepmind', 'color_index': 65 },
+            '11/12': { 'name': 'Kurz', 'color_index': 48 },
+            '13/14': { 'name': 'Yamaha', 'color_index': 28 },
+            '15': { 'name': 'GTR', 'color_index': 29 },
+            '16': { 'name': 'MIC', 'color_index': 47 },
+            '17/18': { 'name': 'MASTER', 'color_index': 64 },
+            '19/20': { 'name': 'Timefactor', 'color_index': 0 },
+            '21/22': { 'name': 'Pitchfactor', 'color_index': 63 },
+            '23/24': { 'name': 'Deluge', 'color_index': 38 },
+            '25/26': { 'name':  'Space','color_index': 22 },
+        }
+        result = input_tracks_names_and_colors.get(channel)
+        self.canonical_parent.log_message(dumpobj(result))
+        return result
 
     def on_track_list_changed(self):
         self.canonical_parent.log_message('Track list changed..')
-        # track_list = list(self.song().tracks)
+        # track_list = list(self.song().tracks) 38
         # # result_tracks = []
         # for track in track_list:
         #     if track.is_grouped and "[BUS]" in track.group_track.name:
