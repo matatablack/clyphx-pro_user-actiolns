@@ -2,6 +2,7 @@
 from ClyphX_Pro.clyphx_pro.UserActionsBase import UserActionsBase
 from utils.log_utils import dumpobj
 import re
+from template.utils.defs import colors_by_name
 
 NUM_X_CONTROLS = 20
 
@@ -22,6 +23,7 @@ class MixerActions(UserActionsBase):
         self.add_global_action('set_mixer_midi_volumes_binding', self.set_mixer_midi_volumes_binding)
         self.add_global_action('record', self.record)
         self.add_global_action('set_record_length', self.set_record_length)
+        self.add_global_action('record2', self.record2)
 
 
     dumpobj = dumpobj
@@ -98,6 +100,157 @@ class MixerActions(UserActionsBase):
         args = args.split()
         value = args[0]
         self.is_adding_midi = True if value == "1" else False
+
+    
+        """
+        @MidiFighter
+        change MF control mode (defs.py)
+    """
+    
+
+    current_control_mode_name = "";
+    def set_mf_binding(self, action_def, args):
+        try:
+            # self.check_thread_avalability_and_block('set_binding', args)
+            args = args.split()
+            control_mode_name = args[0]
+            self.current_control_mode_name = control_mode_name
+            dictionary = { 
+                'control_mode_name': control_mode_name,
+            }
+            actions = '''                  
+                    OSC STR custom/global/action "set_binding";
+                    tpl bind {control_mode_name};
+            '''.format(**dictionary)
+
+            self.canonical_parent.log_message(actions)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+
+            self.canonical_parent.log_message('ASSIGNING MACROS for %s' % control_mode_name)
+            for i in xrange(1, NUM_X_CONTROLS):
+                res = '${prefix}{index}$=${prefix}{index}_{footer}$'.format(prefix="mf_b1_s", index=i, footer=control_mode_name)
+                self.canonical_parent.clyphx_pro_component.trigger_action_list(res)
+                self.canonical_parent.log_message(res)
+            # self.canonical_parent.clyphx_pro_component.trigger_action_list("mixer_finish_execution;")
+        except BaseException as e:
+            self.log('ERROR MIXER: ' + str(e))
+
+    record_length = 2
+    def set_record_length(self, action_def, args):
+        try:
+            args = args.split()
+            self.record_length = args[0]
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+        
+
+    def record2(self, action_def, args): 
+        self.canonical_parent.log_message('-------RECORD2-------22222RECORD-------RECORD2')
+
+    def record(self, action_def, args):
+        try:
+            # # self.check_thread_avalability_and_block('record', args)
+            args = args.split('"')
+            channel_name = args[1] 
+            self.canonical_parent.log_message('-------RECORD-------RECORD-------RECORD &&& %s' % channel_name)
+            switch_number = int(args[2])
+            self.canonical_parent.log_message('PARSED NAME: ' + str(channel_name.split("[MIDI]")[0].strip()))
+            original_color = colors_by_name[str(channel_name.split("[MIDI]")[0].strip())]["default"]
+            self.canonical_parent.log_message('original_color: %s ' % original_color)
+            # self.log('RECORD original_color: ' + str(original_color))
+
+            dictionary = { 
+                'channel_name': channel_name,
+                'fixed_rec_bars': self.record_length,
+                'fixed_rec_bars_half': self.record_length / 2,
+                'fixed_rec_bars_eight': self.record_length / 8,
+                'switch_index': switch_number - 1,
+                'original_color': original_color,
+                'rec_color': 79,
+                'rec_color2': 83,
+            }
+
+
+            # #    WAITS {fixed_rec_bars / 2}B;
+            # #    MIDI CC 6 {switch_index} 7; // half length stroke
+            # #    MIDI CC 1 {switch_index} {original_color};
+            # #    WAITS {fixed_rec_bars / 4}B;
+            # #    MIDI CC 6 {switch_index} 7; // half length stroke
+            # #    MIDI CC 1 {switch_index} {original_color};
+            # #    WAITS {fixed_rec_bars / 4}B;
+            # """   WAITS {fixed_rec_bars}B;
+            #     MIDI CC 6 {switch_index} 0;
+             #     MIDI CC 1 {switch_index} {original_color}; """
+            actions = '''
+                METRO ON;
+                "{channel_name}"/SEL;
+                WAIT 1;
+                "{channel_name}"/ARM ON;
+                WAIT 1;
+                MIDI CC 1 {switch_index} {original_color};
+                MIDI CC 6 {switch_index} 15;
+                MIDI CC 1 {switch_index} {original_color};
+                WAITS 0.5B;
+                RECFIX {fixed_rec_bars} EMPTY;
+                WAITS 0.5B;
+                MIDI CC 6 {switch_index} 6;
+                MIDI CC 1 {switch_index} {rec_color};
+                WAITS {fixed_rec_bars_half}B;
+                MIDI CC 6 {switch_index} 7;
+                MIDI CC 1 {switch_index} {rec_color2};
+                WAITS {fixed_rec_bars_half}B;
+
+                METRO OFF;
+                MIDI CC 1 {switch_index} {original_color};
+                MIDI CC 6 {switch_index} 0;
+                "{channel_name}"/MON AUTO;
+                "{channel_name}"/ARM OFF;
+
+                
+            '''.format(**dictionary)
+                #  mixer_finish_execution;
+            self.canonical_parent.log_message(actions)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+    def set_mixer_midi_volumes_binding(self, action_def, args):
+        try:
+            # self.canonical_parent.log_message("TRYING set_mixer_midi_volumes_binding")
+            self.check_thread_avalability_and_block('set_mixer_midi_volumes_binding', args)
+            
+            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "set_mixer_midi_volumes_binding"')
+            mixer_daw_volumes = """
+                BIND FADER_1 "Kick"/VOL;
+                BIND FADER_2 "Minitaur"/VOL;
+                BIND FADER_3 "Drums"/VOL;
+                BIND FADER_4 "Omni 1"/VOL;
+                BIND FADER_5 "V. Bass"/VOL;
+                BIND FADER_6 "SH01A"/VOL;
+                BIND FADER_7 "TB3"/VOL;
+                BIND FADER_8 "Grandmother"/VOL;
+                BIND FADER_9 "Deepmind"/VOL;
+                BIND FADER_10 "Omni 2"/VOL;
+                BIND FADER_11 "GTR VOX"/VOL;
+                BIND FADER_12 "BASS COMP"/VOL;
+                BIND FADER_13 "Yamaha"/VOL;
+                BIND FADER_14 "Omni 3"/VOL;
+                BIND FADER_15 "GTR"/VOL;
+                BIND FADER_16 "MIC"/VOL;
+
+                BIND FADER_MIDI_1 "Omni 4"/VOL;
+                BIND FADER_MIDI_2 "Deluge"/VOL;
+                BIND FADER_MIDI_3 "Space"/VOL;
+                BIND FADER_MIDI_4 "Timefactor"/VOL;
+                mixer_finish_execution;
+            """
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(mixer_daw_volumes)
+
+        except BaseException as e:
+            self.log('ERROR: ' + str(e))
+
+
         
 
     def add(self, action_def, args):
@@ -164,107 +317,6 @@ class MixerActions(UserActionsBase):
             
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))
-
-        """
-        @MidiFighter
-        change MF control mode (defs.py)
-    """
-    
-    def set_mf_binding(self, action_def, args):
-        try:
-            # self.check_thread_avalability_and_block('set_binding', args)
-            args = args.split()
-            control_mode_name = args[0]
-
-            dictionary = { 
-                'control_mode_name': control_mode_name,
-            }
-            actions = '''                  
-                    OSC STR custom/global/action "set_binding";
-                    tpl bind {control_mode_name};
-            '''.format(**dictionary)
-
-            self.canonical_parent.log_message(actions)
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
-
-            self.canonical_parent.log_message('ASSIGNING MACROS for %s' % control_mode_name)
-            for i in xrange(1, NUM_X_CONTROLS):
-                res = '${prefix}{index}$=${prefix}{index}_{footer}$'.format(prefix="mf_b1_s", index=i, footer=control_mode_name)
-                self.canonical_parent.clyphx_pro_component.trigger_action_list(res)
-        except BaseException as e:
-            self.log('ERROR: ' + str(e))
-
-    record_length = 4
-    def set_record_length(self, action_def, args):
-        try:
-            args = args.split()
-            self.record_length = args[0]
-        except BaseException as e:
-            self.log('ERROR: ' + str(e))
-        
-    def record(self, action_def, args):
-        try:
-            # self.check_thread_avalability_and_block('record', args)
-            args = args.split('"')
-            channel_name = args[1]
-
-            dictionary = { 
-                'channel_name': channel_name,
-                'fixed_rec_bars': self.record_length
-            }
-            actions = '''
-                "{channel_name}"/SEL;
-                WAIT 1;
-                "{channel_name}"/ARM ON;
-                WAIT 1;
-                RECFIX {fixed_rec_bars} EMPTY;
-                WAIT 1;
-                WAITS {fixed_rec_bars}B;
-                "{channel_name}"/MON "Auto";
-                "{channel_name}"/ARM OFF;
-            '''.format(**dictionary)
-
-            self.canonical_parent.log_message(actions)
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
-
-        except BaseException as e:
-            self.log('ERROR: ' + str(e))
-
-    def set_mixer_midi_volumes_binding(self, action_def, args):
-        try:
-            # self.canonical_parent.log_message("TRYING set_mixer_midi_volumes_binding")
-            self.check_thread_avalability_and_block('set_mixer_midi_volumes_binding', args)
-            
-            self.canonical_parent.clyphx_pro_component.trigger_action_list('OSC STR custom/global/action "set_mixer_midi_volumes_binding"')
-            mixer_daw_volumes = """
-                BIND FADER_1 "Kick"/VOL;
-                BIND FADER_2 "Minitaur"/VOL;
-                BIND FADER_3 "Drums"/VOL;
-                BIND FADER_4 "Omni 1"/VOL;
-                BIND FADER_5 "V. Bass"/VOL;
-                BIND FADER_6 "SH01A"/VOL;
-                BIND FADER_7 "TB3"/VOL;
-                BIND FADER_8 "Grandmother"/VOL;
-                BIND FADER_9 "Deepmind"/VOL;
-                BIND FADER_10 "Omni 2"/VOL;
-                BIND FADER_11 "GTR VOX"/VOL;
-                BIND FADER_12 "BASS COMP"/VOL;
-                BIND FADER_13 "Yamaha"/VOL;
-                BIND FADER_14 "Omni 3"/VOL;
-                BIND FADER_15 "GTR"/VOL;
-                BIND FADER_16 "MIC"/VOL;
-
-                BIND FADER_MIDI_1 "Omni 4"/VOL;
-                BIND FADER_MIDI_2 "Deluge"/VOL;
-                BIND FADER_MIDI_3 "Space"/VOL;
-                BIND FADER_MIDI_4 "Timefactor"/VOL;
-                mixer_finish_execution;
-            """
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(mixer_daw_volumes)
-
-        except BaseException as e:
-            self.log('ERROR: ' + str(e))
-
 
     """
     ASSIGN
@@ -662,15 +714,23 @@ class MixerActions(UserActionsBase):
         try:
             self.canonical_parent.log_message('-----show_message-----')    
             self.canonical_parent.log_message('message %s' % args)
-            dictionary = { 'message': args }
+            args = args.split('"')
+            autoclean = False if args[2] and args[2].strip() == "off" else True
+            dictionary = { 'message': args[1] }
             actions = '''
-                OSC STR custom/global/msg {message};
-                WAIT 20;
-                OSC STR custom/global/msg "---";
+                OSC STR custom/global/msg "{message}";
             '''.format(**dictionary)
-
             self.canonical_parent.log_message(actions)
             self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)            
+
+            # if autoclean:
+            #     autoclean_actions = '''
+            #         WAIT 20;
+            #         OSC STR custom/global/msg "---";
+            #     '''.format(**dictionary)
+
+            #     self.canonical_parent.log_message(autoclean_actions)
+            #     self.canonical_parent.clyphx_pro_component.trigger_action_list(autoclean_actions)            
                 
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))      
@@ -733,8 +793,8 @@ class MixerActions(UserActionsBase):
 
     def on_track_list_changed(self):
         self.canonical_parent.log_message('Track list changed..')
-        # track_list = list(self.song().tracks) 38
-        # # result_tracks = []
-        # for track in track_list:
-        #     if track.is_grouped and "[BUS]" in track.group_track.name:
-        #          self.canonical_parent.log_message(dumpobj(track))
+        track_list = list(self.song().tracks)
+        # result_tracks = []
+        for track in track_list:
+            if "Grandmother" in track.group_track.name:
+                 self.canonical_parent.log_message(dumpobj(track))

@@ -2,6 +2,91 @@ drum_machine_names_mapping_array = ["Kick", "Snare", "CHH", "Perc"]
 
 column_controls_1 = ["SEND A", "SEND B", "DEV(2) P1", "DEV(2) P2"]
 
+colors_by_name = {
+    "Kick": {
+        "default": 63,
+        "active": 100,
+    },
+    "Minitaur": {
+        "default": 1,
+        "active": 100,
+    },
+    "Drums": {
+        "default": 67,
+        "active": 100,
+    },
+    "Omni 4": {
+        "default": 6,
+        "active": 100,
+    },
+    "Omni 1": {
+        "default": 23,
+        "active": 100,
+    },
+    "V. Bass": {
+        "default": 115,
+        "active": 100,
+        "brightness": 10
+    },
+    "SH01A": {
+        "default": 70,
+        "active": 100,
+    },
+    "TB3": {
+        "default": 7,
+        "active": 100,
+    },
+    "Grandmother": {
+        "default": 110,
+        "active": 100,
+    },
+    "Deepmind": {
+        "default": 2,
+        "active": 100,
+    },
+    "Omni 2": {
+        "default": 16,
+        "active": 100,
+    },
+    "GTR VOX": {
+        "default": 30,
+        "active": 100,
+    },
+    "BASS COMP": {
+        "default": 40,
+        "active": 100,
+    },
+    "Yamaha": {
+        "default": 77,
+        "active": 100,
+    },
+    "Omni 3": {
+        "default": 18,
+        "active": 100,
+    },
+    "GTR Acus": {
+        "default": 71,
+        "active": 100,
+    },
+    "A-Send A": {
+        "default": 32,
+        "active": 100,
+    },
+    "B-Send B": {
+        "default": 115,
+        "active": 100,
+    },
+    "C-Send C": {
+        "default": 75,
+        "active": 100,
+    },
+    "Master": {
+        "default": 90,
+        "active": 100,
+    }
+}
+
+
 instrument_control_0 = """ 
     bind mf_b1_e1 "Kick"/SEND A;
     bind mf_b1_e5 "Kick"/SEND B;
@@ -19,8 +104,6 @@ instrument_control_0 = """
     bind mf_b1_e8 "Omni 4"/SEND B;
     bind mf_b1_e12 "Omni 4"/DEV(2) P1;
     bind mf_b1_e16 "Omni 4"/DEV(2) P2;
-
-
  """
 
 instrument_control_1 = """ 
@@ -87,26 +170,24 @@ instrument_control_3 = """
 
 master_fx_and_sends = """ 
     bind mf_b1_e1 "A-Send A"/DEV(1) P1;
-    bind mf_b1_e5 "A-Send A"/DEV(1) P2;
-    bind mf_b1_e9 "A-Send A"/DEV(1) P3;
-    bind mf_b1_e13 "A-Send A"/DEV(1) P4;
+    bind mf_b1_e2 "A-Send A"/DEV(1) P2;
+    bind mf_b1_e5 "A-Send A"/DEV(1) P3;
+    bind mf_b1_e6 "A-Send A"/DEV(1) P4;
 
-    bind mf_b1_e2 "B-Send B"/DEV(1) P1;
-    bind mf_b1_e6 "B-Send B"/DEV(1) P2;
-    bind mf_b1_e10 "B-Send B"/DEV(1) P3;
-    bind mf_b1_e14 "B-Send B"/DEV(1) P4;
+    bind mf_b1_e3 "B-Send B"/DEV(1) P1;
+    bind mf_b1_e4 "B-Send B"/DEV(1) P2;
+    bind mf_b1_e7 "B-Send B"/DEV(1) P3;
+    bind mf_b1_e8 "B-Send B"/DEV(1) P4;
     
-    bind mf_b1_e3 "C-Send C"/DEV(1) P1;
-    bind mf_b1_e7 "C-Send C"/DEV(1) P2;
+    bind mf_b1_e9 "C-Send C"/DEV(1) P1;
+    bind mf_b1_e10 "C-Send C"/DEV(1) P2;
     bind mf_b1_e11 "C-Send C"/DEV(1) P3;
-    bind mf_b1_e15 "C-Send C"/DEV(1) P4;
+    bind mf_b1_e12 "C-Send C"/DEV(1) P4;
 
-    bind mf_b1_e4 "Master"/DEV("FX") P1;
-    bind mf_b1_e8 "Master"/DEV("FX") P2;
-    bind mf_b1_e12 "Master"/DEV("FX") P3;
+    bind mf_b1_e13 "Master"/DEV("FX") P1;
+    bind mf_b1_e14 "Master"/DEV("FX") P2;
+    bind mf_b1_e15 "Master"/DEV("FX") P3;
     bind mf_b1_e16 "Master"/DEV("FX") P4;
-
-
  """
 
 live_1 = """ 
@@ -136,131 +217,131 @@ live_1 = """
 
 mf_color_schemas = {
     "instrument_control_0": [
-        [1, 33, 100, 100],
-        [5, 33, 100, 100],
-        [9, 33, 100, 100],
-        [13, 33, 100, 100],
+        [1, colors_by_name["Kick"]["default"], 100, 100],
+        [5, colors_by_name["Kick"]["default"], 100, 100],
+        [9, colors_by_name["Kick"]["default"], 100, 100],
+        [13, colors_by_name["Kick"]["default"], 100, 100],
 
-        [2, 89, 100, 100],
-        [6, 89, 100, 100],
-        [10, 89, 100, 100],
-        [14, 89, 100, 100],
+        [2, colors_by_name["Minitaur"]["default"], 100, 100],
+        [6, colors_by_name["Minitaur"]["default"], 100, 100],
+        [10, colors_by_name["Minitaur"]["default"], 100, 100],
+        [14, colors_by_name["Minitaur"]["default"], 100, 100],
 
-        [3, 56, 100, 100],
-        [7, 56, 100, 100],
-        [11, 56, 100, 100],
-        [15, 56, 100, 100],
+        [3,  colors_by_name["Drums"]["default"], 100, 100],
+        [7,  colors_by_name["Drums"]["default"], 100, 100],
+        [11, colors_by_name["Drums"]["default"] , 100, 100],
+        [15,  colors_by_name["Drums"]["default"], 100, 100],
 
-        [4, 73, 100, 100],
-        [8, 73, 100, 100],
-        [12, 73, 100, 100],
-        [16, 73, 100, 100]
+        [4, colors_by_name["Omni 4"]["default"], 100, 100],
+        [8, colors_by_name["Omni 4"]["default"], 100, 100],
+        [12, colors_by_name["Omni 4"]["default"], 100, 100],
+        [16, colors_by_name["Omni 4"]["default"], 100, 100]
     ],
 
     "instrument_control_1": [
-        [1, 64, 100, 100],
-        [5, 64, 100, 100],
-        [9, 64, 100, 100],
-        [13, 64, 100, 100],
+        [1, colors_by_name["Omni 1"]["default"], 100, 100],
+        [5, colors_by_name["Omni 1"]["default"], 100, 100],
+        [9, colors_by_name["Omni 1"]["default"], 100, 100],
+        [13, colors_by_name["Omni 1"]["default"], 100, 100],
 
-        [2, 30, 100, 100],
-        [6, 30, 100, 100],
-        [10, 30, 100, 100],
-        [14, 30, 100, 100],
+        [2, colors_by_name["V. Bass"]["default"], 100, 100],
+        [6, colors_by_name["V. Bass"]["default"], 100, 100],
+        [10, colors_by_name["V. Bass"]["default"], 100, 100],
+        [14, colors_by_name["V. Bass"]["default"], 100, 100],
 
-        [3, 96, 100, 100],
-        [7, 96, 100, 100],
-        [11, 96, 100, 100],
-        [15, 96, 100, 100],
+        [3, colors_by_name["SH01A"]["default"], 100, 100],
+        [7, colors_by_name["SH01A"]["default"], 100, 100],
+        [11, colors_by_name["SH01A"]["default"], 100, 100],
+        [15, colors_by_name["SH01A"]["default"], 100, 100],
 
-        [4, 70, 100, 100],
-        [8, 70, 100, 100],
-        [12, 70, 100, 100],
-        [16, 70, 100, 100]
+        [4, colors_by_name["TB3"]["default"], 100, 100],
+        [8, colors_by_name["TB3"]["default"], 100, 100],
+        [12, colors_by_name["TB3"]["default"], 100, 100],
+        [16, colors_by_name["TB3"]["default"], 100, 100]
     ],
     "instrument_control_2": [
-        [1, 48, 100, 100],
-        [5, 48, 100, 100],
-        [9, 48, 100, 100],
-        [13, 48, 100, 100],
+        [1, colors_by_name["Grandmother"]["default"], 100, 100],
+        [5, colors_by_name["Grandmother"]["default"], 100, 100],
+        [9, colors_by_name["Grandmother"]["default"], 100, 100],
+        [13, colors_by_name["Grandmother"]["default"], 100, 100],
 
-        [2, 89, 100, 100],
-        [6, 89, 100, 100],
-        [10, 89, 100, 100],
-        [14, 89, 100, 100],
+        [2, colors_by_name["Deepmind"]["default"], 100, 100],
+        [6, colors_by_name["Deepmind"]["default"], 100, 100],
+        [10, colors_by_name["Deepmind"]["default"], 100, 100],
+        [14, colors_by_name["Deepmind"]["default"], 100, 100],
 
-        [3, 56, 100, 100],
-        [7, 56, 100, 100],
-        [11, 56, 100, 100],
-        [15, 56, 100, 100],
+        [3, colors_by_name["Omni 2"]["default"], 100, 100],
+        [7, colors_by_name["Omni 2"]["default"], 100, 100],
+        [11, colors_by_name["Omni 2"]["default"], 100, 100],
+        [15, colors_by_name["Omni 2"]["default"], 100, 100],
 
-        [4, 69, 100, 100],
-        [8, 69, 100, 100],
-        [12, 69, 100, 100],
-        [16, 69, 100, 100]
+        [4, colors_by_name["GTR VOX"]["default"], 100, 100],
+        [8, colors_by_name["GTR VOX"]["default"], 100, 100],
+        [12, colors_by_name["GTR VOX"]["default"], 100, 100],
+        [16, colors_by_name["GTR VOX"]["default"], 100, 100]
     ],
     "instrument_control_3": [
-        [1, 80, 100, 100],
-        [5, 80, 100, 100],
-        [9, 80, 100, 100],
-        [13, 80, 100, 100],
+        [1, colors_by_name["BASS COMP"]["default"], 100, 100],
+        [5, colors_by_name["BASS COMP"]["default"], 100, 100],
+        [9, colors_by_name["BASS COMP"]["default"], 100, 100],
+        [13, colors_by_name["BASS COMP"]["default"], 100, 100],
 
-        [2, 45, 100, 100],
-        [6, 45, 100, 100],
-        [10, 45, 100, 100],
-        [14, 45, 100, 100],
+        [2, colors_by_name["Yamaha"]["default"], 100, 100],
+        [6, colors_by_name["Yamaha"]["default"], 100, 100],
+        [10, colors_by_name["Yamaha"]["default"], 100, 100],
+        [14, colors_by_name["Yamaha"]["default"], 100, 100],
 
-        [3, 77, 100, 100],
-        [7, 77, 100, 100],
-        [11, 77, 100, 100],
-        [15, 77, 100, 100],
+        [3, colors_by_name["Omni 3"]["default"], 100, 100],
+        [7, colors_by_name["Omni 3"]["default"], 100, 100],
+        [11, colors_by_name["Omni 3"]["default"], 100, 100],
+        [15, colors_by_name["Omni 3"]["default"], 100, 100],
 
-        [4, 105, 100, 100],
-        [8, 105, 100, 100],
-        [12, 105, 100, 100],
-        [16, 105, 100, 100]
+        [4, colors_by_name["GTR Acus"]["default"], 100, 100],
+        [8, colors_by_name["GTR Acus"]["default"], 100, 100],
+        [12, colors_by_name["GTR Acus"]["default"], 100, 100],
+        [16, colors_by_name["GTR Acus"]["default"], 100, 100]
     ],
     "master_fx_and_sends": [
-        [1, 45, 100, 100],
-        [2, 45, 100, 100],
-        [5, 45, 100, 100],
-        [6, 45, 100, 100],
+        [1, colors_by_name["A-Send A"]["default"], 100, 100],
+        [2, colors_by_name["A-Send A"]["default"], 100, 100],
+        [5, colors_by_name["A-Send A"]["default"], 100, 100],
+        [6, colors_by_name["A-Send A"]["default"], 100, 100],
 
-        [9, 80, 100, 100],
-        [10, 80, 100, 100],
-        [11, 80, 100, 100],
-        [12, 80, 100, 100],
+        [9, colors_by_name["C-Send C"]["default"], 100, 100],
+        [10, colors_by_name["C-Send C"]["default"], 100, 100],
+        [11, colors_by_name["C-Send C"]["default"], 100, 100],
+        [12, colors_by_name["C-Send C"]["default"], 100, 100],
 
-        [13, 77, 100, 100],
-        [14, 77, 100, 100],
-        [15, 77, 100, 100],
-        [16, 77, 100, 100],
+        [13, colors_by_name["Master"]["default"], 100, 100],
+        [14, colors_by_name["Master"]["default"], 100, 100],
+        [15, colors_by_name["Master"]["default"], 100, 100],
+        [16, colors_by_name["Master"]["default"], 100, 100],
 
-        [3, 102, 100, 100],
-        [4, 102, 100, 100],
-        [7, 102, 100, 100],
-        [8, 102, 100, 100],
+        [3, colors_by_name["B-Send B"]["default"], 100, 100],
+        [4, colors_by_name["B-Send B"]["default"], 100, 100],
+        [7, colors_by_name["B-Send B"]["default"], 100, 100],
+        [8, colors_by_name["B-Send B"]["default"], 100, 100],
     ],
     "live_1": [
-        [1, 45, 100, 100],
-        [2, 45, 100, 100],
-        [5, 45, 100, 100],
-        [6, 45, 100, 100],
+        [1, colors_by_name["Drums"]["default"], 100, 100],
+        [5, colors_by_name["Drums"]["default"], 100, 100],
+        [9, colors_by_name["Drums"]["default"], 100, 100],
+        [13, colors_by_name["Drums"]["default"], 100, 100],
 
-        [9, 80, 100, 100],
-        [10, 80, 100, 100],
-        [11, 80, 100, 100],
-        [12, 80, 100, 100],
+        [2, colors_by_name["BASS COMP"]["default"], 100, 100],
+        [6, colors_by_name["BASS COMP"]["default"], 100, 100],
+        [10, colors_by_name["BASS COMP"]["default"], 100, 100],
+        [14, colors_by_name["BASS COMP"]["default"], 100, 100],
 
-        [13, 77, 100, 100],
-        [14, 77, 100, 100],
-        [15, 77, 100, 100],
-        [16, 77, 100, 100],
+        [3, colors_by_name["GTR VOX"]["default"], 100, 100],
+        [7, colors_by_name["GTR VOX"]["default"], 100, 100],
+        [11, colors_by_name["GTR VOX"]["default"], 100, 100],
+        [15, colors_by_name["GTR VOX"]["default"], 100, 100],
 
-        [3, 102, 100, 100],
-        [4, 102, 100, 100],
-        [7, 102, 100, 100],
-        [8, 102, 100, 100],
+        [4, colors_by_name["Yamaha"]["default"], 100, 100],
+        [8, colors_by_name["Yamaha"]["default"], 100, 100],
+        [12, colors_by_name["Yamaha"]["default"], 100, 100],
+        [16, colors_by_name["Yamaha"]["default"], 100, 100]
     ],
 }
 
@@ -287,6 +368,6 @@ control_modes_defs = {
     },
     "live_1": {
         "binding": live_1,
-        "color_schema": mf_color_schemas["instrument_control_3"],
+        "color_schema": mf_color_schemas["live_1"],
     }
 }

@@ -19,12 +19,12 @@ class MidiFighter:
         try:
             result = ""
             for color_def in control_mode_color_schema:
+                result = result + "MIDI CC 6 %s 0;" % str(color_def[0] - 1) + "\n"
                 result = result + color(color_def[0], color_def[1]) + "\n"
                 # self.trigger(rgb_brightness(color_def[0], color_def[2])) #not working!
                 # self.trigger(ind_brightness(color_def[0], color_def[3]))
-                # result = result + "MIDI CC 6 %s 5;" % color_def[0] - 1+ "\n"
             self.trigger(result)
         except BaseException as e:
-            self.log('ERROR: ' + str(e))
+            self.log('ERROR FROM MIDIFIGHTER MODULE: ' + str(e))
 
         
