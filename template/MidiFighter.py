@@ -17,10 +17,13 @@ class MidiFighter:
 
     def set_color_schema(self, control_mode_color_schema):
         try:
+            result = ""
             for color_def in control_mode_color_schema:
-                self.trigger(color(color_def[0], color_def[1]))
-                self.trigger(rgb_brightness(color_def[0], color_def[2])) #not working!
-                self.trigger(ind_brightness(color_def[0], color_def[3]))
+                result = result + color(color_def[0], color_def[1]) + "\n"
+                # self.trigger(rgb_brightness(color_def[0], color_def[2])) #not working!
+                # self.trigger(ind_brightness(color_def[0], color_def[3]))
+                # result = result + "MIDI CC 6 %s 5;" % color_def[0] - 1+ "\n"
+            self.trigger(result)
         except BaseException as e:
             self.log('ERROR: ' + str(e))
 

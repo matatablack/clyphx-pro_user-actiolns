@@ -3,7 +3,7 @@ from ClyphX_Pro.clyphx_pro.UserActionsBase import UserActionsBase
 from utils.log_utils import dumpobj
 import re
 
-NUM_X_CONTROLS = 100
+NUM_X_CONTROLS = 20
 
 class MixerActions(UserActionsBase):
 
@@ -194,7 +194,7 @@ class MixerActions(UserActionsBase):
         except BaseException as e:
             self.log('ERROR: ' + str(e))
 
-    record_length = 2
+    record_length = 4
     def set_record_length(self, action_def, args):
         try:
             args = args.split()
@@ -210,12 +210,17 @@ class MixerActions(UserActionsBase):
 
             dictionary = { 
                 'channel_name': channel_name,
-                'fixed_rec_bars': 2
+                'fixed_rec_bars': self.record_length
             }
-            actions = '''        
+            actions = '''
+                "{channel_name}"/SEL;
+                WAIT 1;
                 "{channel_name}"/ARM ON;
+                WAIT 1;
                 RECFIX {fixed_rec_bars} EMPTY;
+                WAIT 1;
                 WAITS {fixed_rec_bars}B;
+                "{channel_name}"/MON "Auto";
                 "{channel_name}"/ARM OFF;
             '''.format(**dictionary)
 

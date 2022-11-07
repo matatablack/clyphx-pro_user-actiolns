@@ -1,6 +1,8 @@
 def color(enc, val):
     #todo -> accept hex
-    return "MIDI CC 2 %s %s" % (int(enc) - 1, val)
+    # return "MIDI NOTE 1 %s %s;" % (int(enc) - 1, val)
+    #  return "MIDI CC 2 %s %s" % (int(enc) - 1, val)
+    return "MIDI CC 1 %s %s;" % (int(enc) - 1, val)
 
 def rgb_brightness(enc, val):
     return _build_light_change_midi_message(enc, val, [17, 47])

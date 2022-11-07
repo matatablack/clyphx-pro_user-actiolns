@@ -1,7 +1,7 @@
 from ClyphX_Pro.clyphx_pro.UserActionsBase import UserActionsBase
 
 """ The number of X-Controls to add shift functionality to. """
-NUM_X_CONTROLS = 100
+NUM_X_CONTROLS = 32
 
 
 class ShiftAction(UserActionsBase):
