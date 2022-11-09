@@ -5,6 +5,7 @@ import re
 from template.utils.defs import colors_by_name
 import time
 import threading
+import math
 
 NUM_X_CONTROLS = 20
 
@@ -247,24 +248,9 @@ class MixerActions(UserActionsBase):
                 self.canonical_parent.log_message(
                     'not recording, start recording on next slot')
                 clipslot += 1
-
-            fixed_rec_bars = self.record_length
-            fixed_rec_bars_half = self.record_length / 2
-            fixed_rec_bars_quarter = self.record_length / 4
-            fixed_rec_bars_eight = self.record_length / 8
-            fixed_rec_bars_sixteenth = self.record_length / 16
-            fixed_rec_bars_thirtytwos = self.record_length / 32
-            fixed_rec_bars_mix = fixed_rec_bars_quarter + fixed_rec_bars_eight + fixed_rec_bars_sixteenth + fixed_rec_bars_thirtytwos
             
             dictionary = {
                 'channel_name': channel_name,
-                'fixed_rec_bars': fixed_rec_bars,
-                'fixed_rec_bars_half': fixed_rec_bars_half,
-                'fixed_rec_bars_quarter': fixed_rec_bars_quarter,
-                'fixed_rec_bars_eight': fixed_rec_bars_eight,
-                'fixed_rec_bars_sixteenth': fixed_rec_bars_sixteenth,
-                'fixed_rec_bars_thirtytwos': fixed_rec_bars_thirtytwos,
-                'fixed_rec_bars_mix': fixed_rec_bars_mix,
                 'switch_index': switch_number - 1,
                 'original_color': original_color,
                 'rec_color': 79,
@@ -273,38 +259,93 @@ class MixerActions(UserActionsBase):
                 'clipslot': clipslot + 1,
             }
 
+            self.last_clip_by_channel[channel_name] = dictionary['clipslot']
+
             actions = '''
+                MIDI CC 1 {switch_index} {original_color};
                 METRO ON;
                 "{channel_name}"/SEL;
                 "{channel_name}"/ARM ON;
-                MIDI CC 1 {switch_index} {original_color};
+                "{channel_name}"/MON AUTO;
                 MIDI CC 6 {switch_index} 15;
                 MIDI CC 1 {switch_index} {original_color};
-
                 {track_index}/play {clipslot};
+                MIDI CC 1 {switch_index} {original_color};
+            '''.format(**dictionary)
+
+            
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+            self.canonical_parent.log_message(actions)
+
+            def merge_two_dicts(x, y):
+                z = x.copy()   # start with keys and values of x
+                z.update(y)    # modifies z with keys and values of y
+                return z
+
+            bars_by_gq_value = [0,8,4,2,1,0.5,0.25]
+            
+        
+            current_song_time_in_beats = self.song().current_song_time
+            global_quantization_in_bars = bars_by_gq_value[self.song().clip_trigger_quantization]
+            bpm = self.song().tempo
+            ticks_per_bar = self.song().signature_numerator
+            beat_in_ms = 1 / (bpm / 60 / 1000) 
+            current_song_time_in_ms = current_song_time_in_beats * beat_in_ms
+            bar_in_ms = beat_in_ms * ticks_per_bar
+            global_quantization_bars_in_ms = global_quantization_in_bars * bar_in_ms
+            next_launch_in_ms = global_quantization_bars_in_ms * math.ceil(current_song_time_in_ms / global_quantization_bars_in_ms)
+            ms_left_till_next_launch = next_launch_in_ms - current_song_time_in_ms
+            hundred_of_ms_till_next_launch = int(math.ceil(ms_left_till_next_launch / 100))
+
+            fixed_rec_bars = float(self.record_length)
+            fixed_rec_bars_half = fixed_rec_bars / 2
+            fixed_rec_bars_quarter = fixed_rec_bars_half / 2
+            fixed_rec_bars_8 = fixed_rec_bars_quarter / 2
+            fixed_rec_bars_16 = fixed_rec_bars_8 / 2
+            fixed_rec_bars_32 = fixed_rec_bars_16 / 2
+            fixed_rec_bars_half_minus_16 = fixed_rec_bars_half - fixed_rec_bars_16
+
+            self.canonical_parent.log_message('current_song_time_in_beats %s' % str(current_song_time_in_beats))
+            self.canonical_parent.log_message('global_quantization_in_bars %s' % str(global_quantization_in_bars))
+            self.canonical_parent.log_message('bpm %s' % str(bpm))
+            self.canonical_parent.log_message('ticks_per_bar %s' % str(ticks_per_bar))
+            self.canonical_parent.log_message('beat_in_ms %s' % str(beat_in_ms))
+            self.canonical_parent.log_message('current_song_time_in_ms %s' % str(current_song_time_in_ms))
+            self.canonical_parent.log_message('bar_in_ms %s' % str(bar_in_ms))
+            self.canonical_parent.log_message('global_quantization_bars_in_ms %s' % str(global_quantization_bars_in_ms))
+            self.canonical_parent.log_message('next_launch_in_ms %s' % str(next_launch_in_ms))
+            self.canonical_parent.log_message('ms_left_till_next_launch %s' % str(ms_left_till_next_launch))
+            self.canonical_parent.log_message('hundred_of_ms_till_next_launch %s' % str(hundred_of_ms_till_next_launch))
+
+            dict2 = { 
+                'hundred_of_ms_till_next_launch': hundred_of_ms_till_next_launch,
+                'fixed_rec_bars': fixed_rec_bars,
+                'fixed_rec_bars_half': fixed_rec_bars_half,
+                'fixed_rec_bars_16': fixed_rec_bars_16,
+                'fixed_rec_bars_32': fixed_rec_bars_32,
+                'fixed_rec_bars_half_minus_16': fixed_rec_bars_half_minus_16,
+            }
+            
+            while_recording_actions = '''
+                WAIT {hundred_of_ms_till_next_launch};
                 MIDI CC 1 {switch_index} {rec_color};
                 MIDI CC 6 {switch_index} 6;
                 WAITS {fixed_rec_bars_half}B;
                 MIDI CC 1 {switch_index} {rec_color2};
                 MIDI CC 6 {switch_index} 7;
-                WAITS {fixed_rec_bars_mix}B;
-                {track_index}/play {clipslot}; 
-                WAITS {fixed_rec_bars_sixteenth}B;
-                METRO OFF;
+
+                WAITS {fixed_rec_bars_half_minus_16}B;
+                {track_index}/play {clipslot};
+                WAITS {fixed_rec_bars_16}B;
                 MIDI CC 1 {switch_index} {original_color};
                 MIDI CC 6 {switch_index} 0;
-                WAITS {fixed_rec_bars_thirtytwos};
-                "{channel_name}"/MON AUTO;
+                WAITS 1;
+                METRO OFF;
                 "{channel_name}"/ARM OFF;
-            '''.format(**dictionary)
+            '''.format(**merge_two_dicts(dictionary, dict2))
 
-        
-
-            self.last_clip_by_channel[channel_name] = dictionary['clipslot']
-
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(
-                actions)
-            self.canonical_parent.log_message(actions)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(while_recording_actions)
+            self.canonical_parent.log_message(while_recording_actions)
 
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))
