@@ -48,6 +48,8 @@ class MixerActions(UserActionsBase):
         self.add_global_action('record', self.record)
         self.add_global_action('set_record_length', self.set_record_length)
         self.add_global_action('delete_last_clip', self.delete_last_clip)
+        self.add_global_action('set_last_clip_for_switch',
+                               self.set_last_clip_for_switch)
 
     dumpobj = dumpobj
 
@@ -101,10 +103,11 @@ class MixerActions(UserActionsBase):
     is_execution_blocked = False
     current_action = None
 
-    def check_thread_avalability_and_block(self, action_to_execute, args):
+    def check_thread_avalability_and_block(self, action_to_execute, args, dont_block=False):
         action = "%s %s" % (action_to_execute, args)
         self.canonical_parent.log_message(
             'trying to execute ---> [%s]' % action)
+        if dont_block: return
         if self.is_execution_blocked:
             msg = "Blocked, still executing [%s] action" % (
                 self.current_action)
@@ -176,21 +179,43 @@ class MixerActions(UserActionsBase):
 
     last_clip_by_channel = {}
 
+    def set_last_clip_for_switch(self, action_def, args):
+        try:
+            self.canonical_parent.log_message('set_last_clip_for_switch')
+            args = args.split('"')
+            channel_name = args[1].strip()
+            switch_number = int(args[2])
+            clipslot = int(args[3])
+            self.last_clip_by_channel[channel_name] = {}
+            self.last_clip_by_channel[channel_name][str(switch_number)] = clipslot
+        except BaseException as e:
+            self.canonical_parent.log_message('ERROR: ' + str(e))
+
     def delete_last_clip(self, action_def, args):
         try:
-            self.check_thread_avalability_and_block('delete_last_clip', args)
-            args = args.split()
+            self.check_thread_avalability_and_block('delete_last_clip', args, True)
+            args = args.split('"')
             channel_name = args[1]
-            clipslot = self.last_clip_by_channel[channel_name]
+            switch_number = int(args[2])
+
+            original_color = colors_by_name[str(
+                channel_name.split("[MIDI]")[0].strip())]["default"]
+            self.canonical_parent.clyphx_pro_component.trigger_action_list("MIDI CC 1 %s %s;" % (switch_number - 1, original_color))
+
+            channel_switches = getattr(self.last_clip_by_channel, str(channel_name), {})
+            clipslot = getattr(channel_switches, str(switch_number), None)
 
             dictionary = {
                 'channel_name': channel_name,
-                'clipslot': clipslot
+                'clipslot': clipslot,
+                'original_color': original_color
             }
+
+
 
             if clipslot:
                 actions = '''
-                    "{channel_name}"/SEL {clipslot};
+                    "{channel_name}"/CLIP({clipslot}) DEL;
                     mixer_finish_execution;
                 '''.format(**dictionary)
 
@@ -200,7 +225,7 @@ class MixerActions(UserActionsBase):
             else:
                 self.canonical_parent.log_message("No clip %s" % channel_name)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(
-                    'show_msg "No clip on %s"; mixer_finish_execution;' % channel_name)
+                    'show_msg "No clip on %s switch %s"; mixer_finish_execution;' % (channel_name, switch_number))
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))
 
@@ -222,8 +247,12 @@ class MixerActions(UserActionsBase):
 
             track_index = tracklist.index(track) + 1
             cliplist = list(track.clip_slots)
-            self.canonical_parent.log_message(
-                'Called on track no: %s' % track_index)
+
+            # clipslot = self.last_clip_by_channel[channel_name][switch_number]
+            # if track.clip_slots[clipslot].has_clip:
+            #     track.clip_slots[clipslot].stop()
+            #     return
+            
             for clip in track.clip_slots:
                 self.canonical_parent.log_message(
                     'looping through clips, %s' % clip)
@@ -248,7 +277,7 @@ class MixerActions(UserActionsBase):
                 self.canonical_parent.log_message(
                     'not recording, start recording on next slot')
                 clipslot += 1
-            
+
             dictionary = {
                 'channel_name': channel_name,
                 'switch_index': switch_number - 1,
@@ -257,9 +286,8 @@ class MixerActions(UserActionsBase):
                 'rec_color2': 83,
                 'track_index': track_index,
                 'clipslot': clipslot + 1,
+                'switch_number': switch_number
             }
-
-            self.last_clip_by_channel[channel_name] = dictionary['clipslot']
 
             actions = '''
                 MIDI CC 1 {switch_index} {original_color};
@@ -273,8 +301,8 @@ class MixerActions(UserActionsBase):
                 MIDI CC 1 {switch_index} {original_color};
             '''.format(**dictionary)
 
-            
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(
+                actions)
             self.canonical_parent.log_message(actions)
 
             def merge_two_dicts(x, y):
@@ -282,20 +310,23 @@ class MixerActions(UserActionsBase):
                 z.update(y)    # modifies z with keys and values of y
                 return z
 
-            bars_by_gq_value = [0,8,4,2,1,0.5,0.25]
-            
-        
+            bars_by_gq_value = [0, 8, 4, 2, 1, 0.5, 0.25]
+
             current_song_time_in_beats = self.song().current_song_time
-            global_quantization_in_bars = bars_by_gq_value[self.song().clip_trigger_quantization]
+            global_quantization_in_bars = bars_by_gq_value[self.song(
+            ).clip_trigger_quantization]
             bpm = self.song().tempo
             ticks_per_bar = self.song().signature_numerator
-            beat_in_ms = 1 / (bpm / 60 / 1000) 
+            beat_in_ms = 1 / (bpm / 60 / 1000)
             current_song_time_in_ms = current_song_time_in_beats * beat_in_ms
             bar_in_ms = beat_in_ms * ticks_per_bar
             global_quantization_bars_in_ms = global_quantization_in_bars * bar_in_ms
-            next_launch_in_ms = global_quantization_bars_in_ms * math.ceil(current_song_time_in_ms / global_quantization_bars_in_ms)
+            next_launch_in_ms = global_quantization_bars_in_ms * \
+                math.ceil(current_song_time_in_ms /
+                          global_quantization_bars_in_ms)
             ms_left_till_next_launch = next_launch_in_ms - current_song_time_in_ms
-            hundred_of_ms_till_next_launch = int(math.ceil(ms_left_till_next_launch / 100))
+            hundred_of_ms_till_next_launch = int(
+                math.ceil(ms_left_till_next_launch / 100))
 
             fixed_rec_bars = float(self.record_length)
             fixed_rec_bars_half = fixed_rec_bars / 2
@@ -305,19 +336,28 @@ class MixerActions(UserActionsBase):
             fixed_rec_bars_32 = fixed_rec_bars_16 / 2
             fixed_rec_bars_half_minus_16 = fixed_rec_bars_half - fixed_rec_bars_16
 
-            self.canonical_parent.log_message('current_song_time_in_beats %s' % str(current_song_time_in_beats))
-            self.canonical_parent.log_message('global_quantization_in_bars %s' % str(global_quantization_in_bars))
+            self.canonical_parent.log_message(
+                'current_song_time_in_beats %s' % str(current_song_time_in_beats))
+            self.canonical_parent.log_message(
+                'global_quantization_in_bars %s' % str(global_quantization_in_bars))
             self.canonical_parent.log_message('bpm %s' % str(bpm))
-            self.canonical_parent.log_message('ticks_per_bar %s' % str(ticks_per_bar))
-            self.canonical_parent.log_message('beat_in_ms %s' % str(beat_in_ms))
-            self.canonical_parent.log_message('current_song_time_in_ms %s' % str(current_song_time_in_ms))
+            self.canonical_parent.log_message(
+                'ticks_per_bar %s' % str(ticks_per_bar))
+            self.canonical_parent.log_message(
+                'beat_in_ms %s' % str(beat_in_ms))
+            self.canonical_parent.log_message(
+                'current_song_time_in_ms %s' % str(current_song_time_in_ms))
             self.canonical_parent.log_message('bar_in_ms %s' % str(bar_in_ms))
-            self.canonical_parent.log_message('global_quantization_bars_in_ms %s' % str(global_quantization_bars_in_ms))
-            self.canonical_parent.log_message('next_launch_in_ms %s' % str(next_launch_in_ms))
-            self.canonical_parent.log_message('ms_left_till_next_launch %s' % str(ms_left_till_next_launch))
-            self.canonical_parent.log_message('hundred_of_ms_till_next_launch %s' % str(hundred_of_ms_till_next_launch))
+            self.canonical_parent.log_message(
+                'global_quantization_bars_in_ms %s' % str(global_quantization_bars_in_ms))
+            self.canonical_parent.log_message(
+                'next_launch_in_ms %s' % str(next_launch_in_ms))
+            self.canonical_parent.log_message(
+                'ms_left_till_next_launch %s' % str(ms_left_till_next_launch))
+            self.canonical_parent.log_message(
+                'hundred_of_ms_till_next_launch %s' % str(hundred_of_ms_till_next_launch))
 
-            dict2 = { 
+            dict2 = {
                 'hundred_of_ms_till_next_launch': hundred_of_ms_till_next_launch,
                 'fixed_rec_bars': fixed_rec_bars,
                 'fixed_rec_bars_half': fixed_rec_bars_half,
@@ -325,7 +365,7 @@ class MixerActions(UserActionsBase):
                 'fixed_rec_bars_32': fixed_rec_bars_32,
                 'fixed_rec_bars_half_minus_16': fixed_rec_bars_half_minus_16,
             }
-            
+
             while_recording_actions = '''
                 WAIT {hundred_of_ms_till_next_launch};
                 MIDI CC 1 {switch_index} {rec_color};
@@ -337,6 +377,7 @@ class MixerActions(UserActionsBase):
                 WAITS {fixed_rec_bars_half_minus_16}B;
                 {track_index}/play {clipslot};
                 WAITS {fixed_rec_bars_16}B;
+                set_last_clip_for_switch "{channel_name}" {switch_number} "{clipslot}";
                 MIDI CC 1 {switch_index} {original_color};
                 MIDI CC 6 {switch_index} 0;
                 WAITS 1;
@@ -344,7 +385,8 @@ class MixerActions(UserActionsBase):
                 "{channel_name}"/ARM OFF;
             '''.format(**merge_two_dicts(dictionary, dict2))
 
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(while_recording_actions)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(
+                while_recording_actions)
             self.canonical_parent.log_message(while_recording_actions)
 
         except BaseException as e:
