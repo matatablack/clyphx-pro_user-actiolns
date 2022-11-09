@@ -7,7 +7,7 @@ import time
 import threading
 import math
 
-NUM_X_CONTROLS = 32
+NUM_X_CONTROLS = 50
 
 
 class setInterval:
@@ -263,7 +263,7 @@ class MixerActions(UserActionsBase):
             else:
                 self.canonical_parent.log_message("No clip on %s switch %s" % (channel_name, switch_number))
 
-            change_color_action = "MIDI CC 1 %s %s;'" % (switch_number - 1, original_color)
+            change_color_action = "MIDI CC 2 %s %s;'" % (switch_number - 1, original_color)
             self.canonical_parent.clyphx_pro_component.trigger_action_list(change_color_action)
             self.canonical_parent.log_message(change_color_action)
         except BaseException as e:
@@ -348,15 +348,15 @@ class MixerActions(UserActionsBase):
             }
 
             actions = '''
-                MIDI CC 1 {switch_index} {original_color};
+                MIDI CC 2 {switch_index} {original_color};
                 METRO ON;
                 "{channel_name}"/SEL;
                 "{channel_name}"/ARM ON;
                 {mon_auto_if_not_midi}
-                MIDI CC 1 {switch_index} {original_color};
+                MIDI CC 2 {switch_index} {original_color};
                 MIDI CC 6 {switch_index} 15;
                 {track_index}/play {clipslot};
-                MIDI CC 1 {switch_index} {original_color};
+                MIDI CC 2 {switch_index} {original_color};
             '''.format(**dictionary)
 
             def merge_two_dicts(x, y):
@@ -378,10 +378,10 @@ class MixerActions(UserActionsBase):
                 if track.clip_slots[clipslot].clip.is_recording:
                     # TODO avoid if cancelled 
                     while_rec_actions = '''
-                            MIDI CC 1 {switch_index} {rec_color};
+                            MIDI CC 2 {switch_index} {rec_color};
                             MIDI CC 6 {switch_index} 6;
                             WAITS {fixed_rec_bars_half}B;
-                            MIDI CC 1 {switch_index} {rec_color2};
+                            MIDI CC 2 {switch_index} {rec_color2};
                             MIDI CC 6 {switch_index} 7;
                             WAITS {fixed_rec_bars_half_minus_16}B;
                             {track_index}/play {clipslot};
@@ -395,7 +395,7 @@ class MixerActions(UserActionsBase):
                 if not track.clip_slots[clipslot].clip.is_recording:
                     post_rec_actions = '''
                         set_last_clip_for_switch "{channel_name}" {switch_number} "{clipslot}";
-                        MIDI CC 1 {switch_index} {original_color};
+                        MIDI CC 2 {switch_index} {original_color};
                         MIDI CC 6 {switch_index} 0;
                         WAITS 1;
                         METRO OFF;
@@ -405,7 +405,7 @@ class MixerActions(UserActionsBase):
                     self.canonical_parent.log_message(post_rec_actions)
                 else:
                     post_rec_actions = '''
-                        MIDI CC 1 {switch_index} {original_color};
+                        MIDI CC 2 {switch_index} {original_color};
                         MIDI CC 6 {switch_index} 0;
                     '''.format(**merge_two_dicts(dictionary, dict2))
                     self.canonical_parent.clyphx_pro_component.trigger_action_list(post_rec_actions)
