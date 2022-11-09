@@ -258,14 +258,12 @@ class MixerActions(UserActionsBase):
 
                 if track.clip_slots[int(clipslot) - 1].has_clip:
                     self.canonical_parent.log_message('HAS CLIP')
-                    self.canonical_parent.log_message(dumpobj(track.clip_slots[int(clipslot) - 1]))
+                    # self.canonical_parent.log_message(dumpobj(track.clip_slots[int(clipslot) - 1]))
                     if track.clip_slots[int(clipslot) - 1].clip.is_playing:
                         self.canonical_parent.log_message('IS PLAYING')
                         return track.clip_slots[int(clipslot) - 1].stop()
                     else:
                         return track.clip_slots[int(clipslot) - 1].fire()
-                    
-                    # if track.clip_slots[clipslot].playing_status == :
                     
             except:
                 self.canonical_parent.log_message('no playing clip')
@@ -291,10 +289,14 @@ class MixerActions(UserActionsBase):
             if track.clip_slots[clipslot].is_recording:
                 self.canonical_parent.log_message(
                     'is recording! start playing')
+                # TODO -> call set_ clipslot for switch (to mantain control)
+                # return track.clip_slots[clipslot].fire()
             elif track.clip_slots[clipslot].has_clip:
                 self.canonical_parent.log_message(
                     'not recording, start recording on next slot')
                 clipslot += 1
+
+      
 
             dictionary = {
                 'channel_name': channel_name,
@@ -313,15 +315,11 @@ class MixerActions(UserActionsBase):
                 "{channel_name}"/SEL;
                 "{channel_name}"/ARM ON;
                 "{channel_name}"/MON AUTO;
-                MIDI CC 6 {switch_index} 15;
                 MIDI CC 1 {switch_index} {original_color};
+                MIDI CC 6 {switch_index} 15;
                 {track_index}/play {clipslot};
                 MIDI CC 1 {switch_index} {original_color};
             '''.format(**dictionary)
-
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(
-                actions)
-            self.canonical_parent.log_message(actions)
 
             def merge_two_dicts(x, y):
                 z = x.copy()   # start with keys and values of x
@@ -354,27 +352,6 @@ class MixerActions(UserActionsBase):
             fixed_rec_bars_32 = fixed_rec_bars_16 / 2
             fixed_rec_bars_half_minus_16 = fixed_rec_bars_half - fixed_rec_bars_16
 
-            self.canonical_parent.log_message(
-                'current_song_time_in_beats %s' % str(current_song_time_in_beats))
-            self.canonical_parent.log_message(
-                'global_quantization_in_bars %s' % str(global_quantization_in_bars))
-            self.canonical_parent.log_message('bpm %s' % str(bpm))
-            self.canonical_parent.log_message(
-                'ticks_per_bar %s' % str(ticks_per_bar))
-            self.canonical_parent.log_message(
-                'beat_in_ms %s' % str(beat_in_ms))
-            self.canonical_parent.log_message(
-                'current_song_time_in_ms %s' % str(current_song_time_in_ms))
-            self.canonical_parent.log_message('bar_in_ms %s' % str(bar_in_ms))
-            self.canonical_parent.log_message(
-                'global_quantization_bars_in_ms %s' % str(global_quantization_bars_in_ms))
-            self.canonical_parent.log_message(
-                'next_launch_in_ms %s' % str(next_launch_in_ms))
-            self.canonical_parent.log_message(
-                'ms_left_till_next_launch %s' % str(ms_left_till_next_launch))
-            self.canonical_parent.log_message(
-                'hundred_of_ms_till_next_launch %s' % str(hundred_of_ms_till_next_launch))
-
             dict2 = {
                 'hundred_of_ms_till_next_launch': hundred_of_ms_till_next_launch,
                 'fixed_rec_bars': fixed_rec_bars,
@@ -403,9 +380,42 @@ class MixerActions(UserActionsBase):
                 "{channel_name}"/ARM OFF;
             '''.format(**merge_two_dicts(dictionary, dict2))
 
-            self.canonical_parent.clyphx_pro_component.trigger_action_list(
-                while_recording_actions)
-            self.canonical_parent.log_message(while_recording_actions)
+            def clip_slot_has_clip_callback(): 
+                self.canonical_parent.log_message('HAS CLIP')
+                track.clip_slots[clipslot].clip.add_is_recording_listener(is_recording_callback)
+                track.clip_slots[clipslot].remove_has_clip_listener(clip_slot_has_clip_callback)
+                while_rec_actions = '''
+                        MIDI CC 1 {switch_index} {rec_color2};
+                        MIDI CC 6 {switch_index} 7;
+                        WAITS {fixed_rec_bars_half_minus_16}B;
+                        {track_index}/play {clipslot};
+                    '''.format(**merge_two_dicts(dictionary, dict2))
+                self.canonical_parent.clyphx_pro_component.trigger_action_list(while_rec_actions)
+                self.canonical_parent.log_message(while_rec_actions)
+            
+
+            def is_recording_callback(): 
+                self.canonical_parent.log_message('RECORDING STOPPED')
+                if not track.clip_slots[clipslot].clip.is_recording:
+                    post_rec_actions = '''
+                        set_last_clip_for_switch "{channel_name}" {switch_number} "{clipslot}";
+                        MIDI CC 1 {switch_index} {original_color};
+                        MIDI CC 6 {switch_index} 0;
+                        WAITS 1;
+                        METRO OFF;
+                        "{channel_name}"/ARM OFF;
+                    '''.format(**merge_two_dicts(dictionary, dict2))
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list(post_rec_actions)
+                    self.canonical_parent.log_message(post_rec_actions)
+                    track.clip_slots[clipslot].clip.remove_is_recording_listener(is_recording_callback)
+                    
+
+            track.clip_slots[clipslot].add_has_clip_listener(clip_slot_has_clip_callback)
+
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
+            self.canonical_parent.log_message(actions)
+            # self.canonical_parent.clyphx_pro_component.trigger_action_list(while_recording_actions)
+            # self.canonical_parent.log_message(while_recording_actions)
 
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: ' + str(e))
