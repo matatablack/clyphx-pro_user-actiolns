@@ -140,14 +140,14 @@ class MixerActions(UserActionsBase):
 
     def set_mf_binding(self, action_def, args):
         try:
-            # self.check_thread_avalability_and_block('set_binding', args)
+            self.check_thread_avalability_and_block('set_binding', args)
             args = args.split()
             control_mode_name = args[0]
             self.current_control_mode_name = control_mode_name
             dictionary = {
                 'control_mode_name': control_mode_name,
             }
-            actions = '''                  
+            actions = '''
                     OSC STR custom/global/action "set_binding";
                     tpl bind {control_mode_name};
             '''.format(**dictionary)
@@ -163,8 +163,7 @@ class MixerActions(UserActionsBase):
                     prefix="mf_b1_s", index=i, footer=control_mode_name)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(
                     res)
-                self.canonical_parent.log_message(res)
-            # self.canonical_parent.clyphx_pro_component.trigger_action_list("mixer_finish_execution;")
+            self.canonical_parent.clyphx_pro_component.trigger_action_list("mixer_finish_execution;")
         except BaseException as e:
             self.canonical_parent.log_message('ERROR MIXER: ' + str(e))
 
@@ -197,13 +196,17 @@ class MixerActions(UserActionsBase):
             args = args.split('"')
             channel_name = args[1]
             switch_number = int(args[2])
-
             original_color = colors_by_name[str(
                 channel_name.split("[MIDI]")[0].strip())]["default"]
-            self.canonical_parent.clyphx_pro_component.trigger_action_list("MIDI CC 1 %s %s;" % (switch_number - 1, original_color))
 
-            channel_switches = getattr(self.last_clip_by_channel, str(channel_name), {})
-            clipslot = getattr(channel_switches, str(switch_number), None)
+            self.canonical_parent.log_message(str(self.last_clip_by_channel))
+
+            channel_switches = self.last_clip_by_channel[str(channel_name)] if self.last_clip_by_channel[str(channel_name)] else None
+            self.canonical_parent.log_message("channel_switches: %s " % str(channel_switches))
+            self.canonical_parent.log_message("access value: %s " % str(channel_name.strip()))
+
+            clipslot = channel_switches[str(switch_number)] if channel_switches else None
+            self.canonical_parent.log_message("ACTIVE CLIPSLOT FOR SWITCH: %s " % str(clipslot))
 
             dictionary = {
                 'channel_name': channel_name,
@@ -211,23 +214,22 @@ class MixerActions(UserActionsBase):
                 'original_color': original_color
             }
 
-
-
             if clipslot:
                 actions = '''
                     "{channel_name}"/CLIP({clipslot}) DEL;
-                    mixer_finish_execution;
                 '''.format(**dictionary)
 
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(
                     actions)
                 self.canonical_parent.log_message(actions)
             else:
-                self.canonical_parent.log_message("No clip %s" % channel_name)
-                self.canonical_parent.clyphx_pro_component.trigger_action_list(
-                    'show_msg "No clip on %s switch %s"; mixer_finish_execution;' % (channel_name, switch_number))
+                self.canonical_parent.log_message("No clip on %s switch %s" % (channel_name, switch_number))
+
+            change_color_action = "MIDI CC 1 %s %s;'" % (switch_number - 1, original_color)
+            self.canonical_parent.clyphx_pro_component.trigger_action_list(change_color_action)
+            self.canonical_parent.log_message(change_color_action)
         except BaseException as e:
-            self.canonical_parent.log_message('ERROR: ' + str(e))
+            self.canonical_parent.log_message('Error' + str(e))
 
     def record(self, action_def, args):
         try:
@@ -248,11 +250,27 @@ class MixerActions(UserActionsBase):
             track_index = tracklist.index(track) + 1
             cliplist = list(track.clip_slots)
 
-            # clipslot = self.last_clip_by_channel[channel_name][switch_number]
-            # if track.clip_slots[clipslot].has_clip:
-            #     track.clip_slots[clipslot].stop()
-            #     return
-            
+            try:
+                channel_switches = self.last_clip_by_channel[str(channel_name)] if self.last_clip_by_channel[str(channel_name)] else None
+
+                clipslot = channel_switches[str(switch_number)] if channel_switches else None
+                self.canonical_parent.log_message("ACTIVE CLIPSLOT FOR SWITCH: %s " % str(clipslot))
+
+                if track.clip_slots[int(clipslot) - 1].has_clip:
+                    self.canonical_parent.log_message('HAS CLIP')
+                    self.canonical_parent.log_message(dumpobj(track.clip_slots[int(clipslot) - 1]))
+                    if track.clip_slots[int(clipslot) - 1].clip.is_playing:
+                        self.canonical_parent.log_message('IS PLAYING')
+                        return track.clip_slots[int(clipslot) - 1].stop()
+                    else:
+                        return track.clip_slots[int(clipslot) - 1].fire()
+                    
+                    # if track.clip_slots[clipslot].playing_status == :
+                    
+            except:
+                self.canonical_parent.log_message('no playing clip')
+
+
             for clip in track.clip_slots:
                 self.canonical_parent.log_message(
                     'looping through clips, %s' % clip)
@@ -597,11 +615,11 @@ class MixerActions(UserActionsBase):
                     SEL/MUTE ON;
                     SEL/NAME "{track_name}";
                     LOADUSER "{dev_name}";
-                    WAIT 2;           
+                    WAIT 2;
                     INSAUDIO;
-                    WAIT 3;  
+                    WAIT 3;
                     SEL/COLOR {origin_track_color_index};
-                    SEL/INSUB "Post FX";     
+                    SEL/INSUB "Post FX";
                     SEL/NAME "{return_track_name}";
                     BIND lp_arm_{channel_first} "{return_track_name}"/ARM;
                     BIND lp_solo_{channel_first} "{return_track_name}"/SOLO;
@@ -726,7 +744,7 @@ class MixerActions(UserActionsBase):
             dictionary = {
                 'track_idx': 0,
             }
-            actions = '''                  
+            actions = '''
                     BIND KNOB_1 "[KICK]"/VOL
                     BIND KNOB_2 "[BASS]"/VOL
                     BIND KNOB_3 "[DRUMS]"/VOL
