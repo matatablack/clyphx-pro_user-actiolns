@@ -7,7 +7,7 @@ import time
 import threading
 import math
 
-NUM_X_CONTROLS = 20
+NUM_X_CONTROLS = 32
 
 
 class setInterval:
@@ -50,6 +50,8 @@ class MixerActions(UserActionsBase):
         self.add_global_action('delete_last_clip', self.delete_last_clip)
         self.add_global_action('set_last_clip_for_switch',
                                self.set_last_clip_for_switch)
+        self.add_global_action('mf_shift_switches',
+                               self.mf_shift_switches)
 
     dumpobj = dumpobj
 
@@ -137,16 +139,38 @@ class MixerActions(UserActionsBase):
     """
 
     current_control_mode_name = ""
+    mf_shift_switches = False
 
     def set_mf_binding(self, action_def, args):
         try:
             self.check_thread_avalability_and_block('set_binding', args)
             args = args.split()
             control_mode_name = args[0]
-            self.current_control_mode_name = control_mode_name
+            bank_number = str(args[1]) if len(args) > 1 else ""
+            bank_suffix = "_bank" + bank_number 
+            is_shift = control_mode_name == 'shift'
+
+            
+            mode_name = ""
+            is_current_mode_shifted = "_bank" in self.current_control_mode_name
+            mode_name_without_bank_suffix = self.current_control_mode_name.split("_bank")[0]
+            if is_shift:
+                if is_current_mode_shifted:
+                    mode_name = mode_name_without_bank_suffix
+                else: 
+                    mode_name = self.current_control_mode_name + bank_suffix
+            else:
+                mode_name = control_mode_name
+
             dictionary = {
-                'control_mode_name': control_mode_name,
+                'control_mode_name': mode_name
             }
+
+            self.current_control_mode_name = mode_name
+
+            self.canonical_parent.log_message(' mode_name %s ' % mode_name)
+
+
             actions = '''
                     OSC STR custom/global/action "set_binding";
                     tpl bind {control_mode_name};
@@ -158,14 +182,28 @@ class MixerActions(UserActionsBase):
 
             self.canonical_parent.log_message(
                 'ASSIGNING MACROS for %s' % control_mode_name)
+
             for i in xrange(1, NUM_X_CONTROLS):
                 res = '${prefix}{index}$=${prefix}{index}_{footer}$'.format(
-                    prefix="mf_b1_s", index=i, footer=control_mode_name)
+                    prefix= "mf_b%s_s" % bank_number if is_shift and not is_current_mode_shifted else "mf_b1_s", index=i, footer=mode_name)
+                self.canonical_parent.log_message(res)
                 self.canonical_parent.clyphx_pro_component.trigger_action_list(
                     res)
             self.canonical_parent.clyphx_pro_component.trigger_action_list("mixer_finish_execution;")
         except BaseException as e:
             self.canonical_parent.log_message('ERROR MIXER: ' + str(e))
+
+
+    def mf_shift_switches(self, action_def, args):
+        try:
+            args = args.split()
+            state = args[0]
+            if state == 'on':
+                self.mf_shift_switches = True
+            else:
+                self.mf_shift_switches = False
+        except BaseException as e:
+            self.canonical_parent.log_message('ERROR mf_shift_switches: ' + str(e))
 
     record_length = 4
 
@@ -258,7 +296,10 @@ class MixerActions(UserActionsBase):
 
                 if track.clip_slots[int(clipslot) - 1].has_clip:
                     self.canonical_parent.log_message('HAS CLIP')
-                    # self.canonical_parent.log_message(dumpobj(track.clip_slots[int(clipslot) - 1]))
+                    
+                    if self.mf_shift_switches:
+                        return track.clip_slots[int(clipslot) - 1].delete_clip()
+                        
                     if track.clip_slots[int(clipslot) - 1].clip.is_playing:
                         self.canonical_parent.log_message('IS PLAYING')
                         return track.clip_slots[int(clipslot) - 1].stop()
@@ -286,17 +327,13 @@ class MixerActions(UserActionsBase):
                 'playing_status: %s' % track.clip_slots[clipslot].playing_status)
             self.canonical_parent.log_message(
                 'is_recording: %s' % track.clip_slots[clipslot].is_recording)
-            if track.clip_slots[clipslot].is_recording:
-                self.canonical_parent.log_message(
-                    'is recording! start playing')
-                # TODO -> call set_ clipslot for switch (to mantain control)
-                # return track.clip_slots[clipslot].fire()
+            if track.clip_slots[clipslot].is_recording:                
+                return track.clip_slots[clipslot].fire()
             elif track.clip_slots[clipslot].has_clip:
                 self.canonical_parent.log_message(
                     'not recording, start recording on next slot')
                 clipslot += 1
 
-      
 
             dictionary = {
                 'channel_name': channel_name,
@@ -306,7 +343,8 @@ class MixerActions(UserActionsBase):
                 'rec_color2': 83,
                 'track_index': track_index,
                 'clipslot': clipslot + 1,
-                'switch_number': switch_number
+                'switch_number': switch_number,
+                'mon_auto_if_not_midi': '"%s"/MON AUTO;' % channel_name if not "[MIDI]" in channel_name else ""
             }
 
             actions = '''
@@ -314,7 +352,7 @@ class MixerActions(UserActionsBase):
                 METRO ON;
                 "{channel_name}"/SEL;
                 "{channel_name}"/ARM ON;
-                "{channel_name}"/MON AUTO;
+                {mon_auto_if_not_midi}
                 MIDI CC 1 {switch_index} {original_color};
                 MIDI CC 6 {switch_index} 15;
                 {track_index}/play {clipslot};
@@ -326,72 +364,30 @@ class MixerActions(UserActionsBase):
                 z.update(y)    # modifies z with keys and values of y
                 return z
 
-            bars_by_gq_value = [0, 8, 4, 2, 1, 0.5, 0.25]
-
-            current_song_time_in_beats = self.song().current_song_time
-            global_quantization_in_bars = bars_by_gq_value[self.song(
-            ).clip_trigger_quantization]
-            bpm = self.song().tempo
-            ticks_per_bar = self.song().signature_numerator
-            beat_in_ms = 1 / (bpm / 60 / 1000)
-            current_song_time_in_ms = current_song_time_in_beats * beat_in_ms
-            bar_in_ms = beat_in_ms * ticks_per_bar
-            global_quantization_bars_in_ms = global_quantization_in_bars * bar_in_ms
-            next_launch_in_ms = global_quantization_bars_in_ms * \
-                math.ceil(current_song_time_in_ms /
-                          global_quantization_bars_in_ms)
-            ms_left_till_next_launch = next_launch_in_ms - current_song_time_in_ms
-            hundred_of_ms_till_next_launch = int(
-                math.ceil(ms_left_till_next_launch / 100))
-
             fixed_rec_bars = float(self.record_length)
-            fixed_rec_bars_half = fixed_rec_bars / 2
-            fixed_rec_bars_quarter = fixed_rec_bars_half / 2
-            fixed_rec_bars_8 = fixed_rec_bars_quarter / 2
-            fixed_rec_bars_16 = fixed_rec_bars_8 / 2
-            fixed_rec_bars_32 = fixed_rec_bars_16 / 2
-            fixed_rec_bars_half_minus_16 = fixed_rec_bars_half - fixed_rec_bars_16
-
             dict2 = {
-                'hundred_of_ms_till_next_launch': hundred_of_ms_till_next_launch,
                 'fixed_rec_bars': fixed_rec_bars,
-                'fixed_rec_bars_half': fixed_rec_bars_half,
-                'fixed_rec_bars_16': fixed_rec_bars_16,
-                'fixed_rec_bars_32': fixed_rec_bars_32,
-                'fixed_rec_bars_half_minus_16': fixed_rec_bars_half_minus_16,
+                'fixed_rec_bars_half': fixed_rec_bars / 2,
+                'fixed_rec_bars_half_minus_16': fixed_rec_bars / 2 - fixed_rec_bars / 16,
             }
-
-            while_recording_actions = '''
-                WAIT {hundred_of_ms_till_next_launch};
-                MIDI CC 1 {switch_index} {rec_color};
-                MIDI CC 6 {switch_index} 6;
-                WAITS {fixed_rec_bars_half}B;
-                MIDI CC 1 {switch_index} {rec_color2};
-                MIDI CC 6 {switch_index} 7;
-
-                WAITS {fixed_rec_bars_half_minus_16}B;
-                {track_index}/play {clipslot};
-                WAITS {fixed_rec_bars_16}B;
-                set_last_clip_for_switch "{channel_name}" {switch_number} "{clipslot}";
-                MIDI CC 1 {switch_index} {original_color};
-                MIDI CC 6 {switch_index} 0;
-                WAITS 1;
-                METRO OFF;
-                "{channel_name}"/ARM OFF;
-            '''.format(**merge_two_dicts(dictionary, dict2))
 
             def clip_slot_has_clip_callback(): 
                 self.canonical_parent.log_message('HAS CLIP')
                 track.clip_slots[clipslot].clip.add_is_recording_listener(is_recording_callback)
                 track.clip_slots[clipslot].remove_has_clip_listener(clip_slot_has_clip_callback)
-                while_rec_actions = '''
-                        MIDI CC 1 {switch_index} {rec_color2};
-                        MIDI CC 6 {switch_index} 7;
-                        WAITS {fixed_rec_bars_half_minus_16}B;
-                        {track_index}/play {clipslot};
-                    '''.format(**merge_two_dicts(dictionary, dict2))
-                self.canonical_parent.clyphx_pro_component.trigger_action_list(while_rec_actions)
-                self.canonical_parent.log_message(while_rec_actions)
+                if track.clip_slots[clipslot].clip.is_recording:
+                    # TODO avoid if cancelled 
+                    while_rec_actions = '''
+                            MIDI CC 1 {switch_index} {rec_color};
+                            MIDI CC 6 {switch_index} 6;
+                            WAITS {fixed_rec_bars_half}B;
+                            MIDI CC 1 {switch_index} {rec_color2};
+                            MIDI CC 6 {switch_index} 7;
+                            WAITS {fixed_rec_bars_half_minus_16}B;
+                            {track_index}/play {clipslot};
+                        '''.format(**merge_two_dicts(dictionary, dict2))
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list(while_rec_actions)
+                    self.canonical_parent.log_message(while_rec_actions)
             
 
             def is_recording_callback(): 
@@ -407,7 +403,14 @@ class MixerActions(UserActionsBase):
                     '''.format(**merge_two_dicts(dictionary, dict2))
                     self.canonical_parent.clyphx_pro_component.trigger_action_list(post_rec_actions)
                     self.canonical_parent.log_message(post_rec_actions)
-                    track.clip_slots[clipslot].clip.remove_is_recording_listener(is_recording_callback)
+                else:
+                    post_rec_actions = '''
+                        MIDI CC 1 {switch_index} {original_color};
+                        MIDI CC 6 {switch_index} 0;
+                    '''.format(**merge_two_dicts(dictionary, dict2))
+                    self.canonical_parent.clyphx_pro_component.trigger_action_list(post_rec_actions)
+                    self.canonical_parent.log_message(post_rec_actions)
+                track.clip_slots[clipslot].clip.remove_is_recording_listener(is_recording_callback)
                     
 
             track.clip_slots[clipslot].add_has_clip_listener(clip_slot_has_clip_callback)
