@@ -8,50 +8,170 @@ from utils.mf_utils import rgb_brightness, color, rgb_pulse, rgb_strobe, ind_bri
 NUM_X_CONTROLS = 34
 
 modes = {
+    "instrument_control_1": {
+        "channels": {
+            "Omni 1 [MIDI]": {
+                "encoders": [1, 5],
+                "lights_status": {
+                    "5": "",
+                    "1": ""
+                }
+            },
+            "Omni 1": {
+                "encoders": [9, 13],
+                "lights_status": {
+                    "13": "",
+                    "9": ""
+                }
+            },
+            "V. Bass [MIDI]": {
+                "encoders": [2, 6],
+                "lights_status": {
+                    "6": "",
+                    "2": ""
+                }
+            },
+            "V. Bass": {
+                "encoders": [10, 14],
+                "lights_status": {
+                    "14": "",
+                    "10": ""
+                }
+            },
+            "SH01A [MIDI]": {
+                "encoders": [3, 7],
+                "lights_status": {
+                    "7": "",
+                    "3": ""
+                }
+            },
+            "SH01A": {
+                "encoders": [11, 15],
+                "lights_status": {
+                    "15": "",
+                    "11": ""
+                }
+            },
+            "TB3 [MIDI]": {
+                "encoders": [4, 8],
+                "lights_status": {
+                    "8": "",
+                    "4": ""
+                }
+            },
+            "TB3": {
+                "encoders": [12, 16],
+                "lights_status": {
+                    "16": "",
+                    "12": ""
+                }
+            }
+        }
+    },
     "instrument_control_2": {
         "channels": {
             "Grandmother [MIDI]": {
-                "encoders": [1, 5]
+                "encoders": [1, 5],
+                "lights_status": {
+                    "5": "",
+                    "1": ""
+                }
             },
             "Grandmother": {
-                "encoders": [9, 13]
+                "encoders": [9, 13],
+                "lights_status": {
+                    "13": "",
+                    "9": ""
+                }
             },
             "Deepmind": {
-                "encoders": [2, 6]
+                "encoders": [2, 6],
+                "lights_status": {
+                    "6": "",
+                    "2": ""
+                }
             },
             "Deepmind [MIDI]": {
-                "encoders": [10, 14]
+                "encoders": [10, 14],
+                "lights_status": {
+                    "14": "",
+                    "10": ""
+                }
             },
             "GTR VOX": {
-                "encoders": [4, 8, 12, 16]
+                "encoders": [4, 8, 12, 16],
+                "lights_status": {
+                    "4": "",
+                    "8": "",
+                    "12": "",
+                    "16": ""
+                }
             },
             "Omni 2 [MIDI]": {
-                "encoders": [3, 7]
+                "encoders": [3, 7],
+                "lights_status": {
+                    "7": "",
+                    "3": ""
+                }
             },
             "Omni 2": {
-                "encoders": [11, 15]
+                "encoders": [11, 15],
+                "lights_status": {
+                    "15": "",
+                    "11": ""
+                }
             }
         }
     },
     "instrument_control_3": {
         "channels": {
             "BASS COMP": {
-                "encoders": [1, 5, 9, 13]
+                "encoders": [1, 5, 9, 13],
+                "lights_status": {
+                    "13": "",
+                    "9": "",
+                    "5": "",
+                    "1": ""
+
+
+                }
             },
             "Yamaha [MIDI]": {
-                "encoders": [2, 6]
+                "encoders": [2, 6],
+                "lights_status": {
+                    "6": "",
+                    "2": ""
+                }
             },
             "Yamaha": {
-                "encoders": [10, 14]
+                "encoders": [10, 14],
+                "lights_status": {
+                    "14": "",
+                    "10": ""
+                }
             },
             "GTR Acus": {
-                "encoders": [4, 8, 12, 16]
+                "encoders": [4, 8, 12, 16],
+                "lights_status": {
+                    "16": "",
+                    "12": "",
+                    "8": "",
+                    "4": ""
+                }
             },
             "Omni 3 [MIDI]": {
-                "encoders": [3, 7]
+                "encoders": [3, 7],
+                "lights_status": {
+                    "7": "",
+                    "3": ""
+                }
             },
             "Omni 3": {
-                "encoders": [11, 15]
+                "encoders": [11, 15],
+                "lights_status": {
+                    "15": "",
+                    "11": ""
+                }
             }
         }
     }
@@ -105,6 +225,27 @@ class MidiFighterActions(UserActionsBase):
     current_control_mode_name = ""
     mf_shift_switches = False
 
+    def execute_mf_lights_actions(self, action_def, args):
+        self.start_action('execute_mf_lights_actions', "")
+        try:
+            result = ""
+            for channel_name in list(modes[self.current_control_mode_name]["channels"].keys()):
+                channel_obj = modes[self.current_control_mode_name]["channels"][channel_name]
+                self.log('CHANNEL %s' % channel_name)
+                for enc_pos in channel_obj['encoders']:
+                    self.log('enc_pos %s' % enc_pos)
+                    lights = channel_obj['lights_status']
+                    self.log(str(lights))
+                    action = lights[str(enc_pos)]
+                    self.log('action %s' % action);
+                    if action: 
+                        self.log("TRIGGGGERRRRR");
+                        self.trigger(action);
+
+            # self.trigger(result);
+        except BaseException as e:
+            self.canonical_parent.log_message('ERROR execute_mf_lights_actions: ' + str(e))
+
     def set_mf_binding(self, action_def, args):
         try:
             self.start_action('set_binding', args)
@@ -132,6 +273,9 @@ class MidiFighterActions(UserActionsBase):
             if control_modes_defs[mode_name]:
                 self.trigger(control_modes_defs[mode_name]["binding"])
                 self.set_color_schema(control_modes_defs[mode_name]["color_schema"])
+
+            self.log(' !!!!!!!!!!!!!!! execute_mf_lights_actions !!!!!!!!!!!!!!!')
+            self.execute_mf_lights_actions(None, "")
 
             self.log('ASSIGNING MACROS for %s' % mode_name)
 
@@ -168,34 +312,6 @@ class MidiFighterActions(UserActionsBase):
     mf_clipslots_has_clip_callbacks = {}
     mf_clipslots_is_triggered_clip_callbacks = {}
     mf_clips_playing_status_callbacks = {}
-    mf_current_rgb_brigthness_action_by_switch_pos = [None] * 17
-    mf_current_rgb_color_action_by_switch_pos = [None] * 17
-    mf_current_rgb_animation_action_by_switch_pos = [None] * 17
-    mf_current_ind_animation_action_by_switch_pos = [None] * 17
-    mf_current_ind_brightness_action_by_switch_pos = [None] * 17
-
-    def execute_mf_lights_actions(self, action_def, args):
-        try:
-            result = ""
-            # for x in xrange(0, 16):
-            #     self.canonical_parent.log_message(x)
-            #     if self.mf_current_rgb_brigthness_action_by_switch_pos[x] != None:
-            #         result = result + self.mf_current_rgb_brigthness_action_by_switch_pos[x] + '\n'
-            #     if self.mf_current_rgb_color_action_by_switch_pos[x] != None:
-            #         result = result + self.mf_current_rgb_color_action_by_switch_pos[x] + '\n'
-            #     if self.mf_current_rgb_animation_action_by_switch_pos[x] != None:
-            #         result = result + self.mf_current_rgb_animation_action_by_switch_pos[x] + '\n'
-            #     if self.mf_current_rgb_animation_action_by_switch_pos[x] != None:
-            #         result = result + self.mf_current_rgb_animation_action_by_switch_pos[x] + '\n'
-            #     if self.mf_current_ind_animation_action_by_switch_pos[x] != None:
-            #         result = result + self.mf_current_ind_animation_action_by_switch_pos[x] + '\n'
-            #     if self.mf_current_ind_brightness_action_by_switch_pos[x] != None:
-            #         result = result + self.mf_current_ind_brightness_action_by_switch_pos[x] + '\n'
-
-            # self.canonical_parent.log_message(result)
-            # self.canonical_parent.clyphx_pro_component.trigger_action_list(result);
-        except BaseException as e:
-            self.canonical_parent.log_message('ERROR execute_mf_lights_actions: ' + str(e))
 
     def populate_last_clip_by_channel(self, action_def, args):
         try:
@@ -277,45 +393,47 @@ class MidiFighterActions(UserActionsBase):
                         b = rgb_brightness(switch_position, 50)
                         a = rgb_strobe(switch_position, 0)
                         c = color(switch_position, original_color)
+                    
+                    lights_status_action = b + a + c
                     if is_track_visible_in_current_mode(trackname):
-                        self.trigger(b + a + c)
-                    self.mf_current_rgb_brigthness_action_by_switch_pos[switch_position] = b
+                        self.trigger(lights_status_action)
+                    self.log(lights_status_action)
+                    try:
+                        modes[self.current_control_mode_name]['channels'][trackname]['lights_status'][str(switch_position)] = lights_status_action
+                    except BaseException as e:
+                        self.canonical_parent.log_message('ERROR sclip_slot_has_clip_callback etting light status on modes objet : ' + str(e))
 
                 return clip_slot_has_clip_callback
 
-            #     def get_clip_slot_is_triggered(trackname, track_index, clipslot_index, key, original_color):
-            #         def clip_slot_is_triggered():
-            #             clipslot = tracklist[track_index].clip_slots[clipslot_index]
-            #             switch_position = get_switch_position_by_track_name(trackname, clipslot_index)
-            #             b = ""
-            #             a = ""
-            #             c = ""
-            #             if clipslot.is_triggered:
-            #                 if clipslot.will_record_on_start:
-            #                     log(' %s %s IS EMPTY ABOUT TO RECORD' %
-            #                         (trackname, clipslot_index))
-            #                     b = rgb_brightness(switch_position, 80)
-            #                     a = rgb_pulse(switch_position, 5)
-            #                     c = color(switch_position, 80)
+                def get_clip_slot_is_triggered(trackname, track_index, clipslot_index, key, original_color):
+                    def clip_slot_is_triggered():
+                        clipslot = tracklist[track_index].clip_slots[clipslot_index]
+                        switch_position = get_switch_position_by_track_name(trackname, clipslot_index)
+                        b = ""
+                        a = ""
+                        c = ""
+                        if clipslot.is_triggered:
+                            if clipslot.will_record_on_start:
+                                self.log(' %s %s IS EMPTY ABOUT TO RECORD' % (trackname, clipslot_index))
+                                b = rgb_brightness(switch_position, 80)
+                                a = rgb_pulse(switch_position, 5)
+                                c = color(switch_position, 80)
 
-            #                 if clipslot.has_clip:
-            #                     log(' %s %s HAS CLIP' % (trackname, clipslot_index))
-            #                     b = rgb_brightness(switch_position, 100)
-            #                     a = rgb_pulse(switch_position, 5)
-            #                     c = color(switch_position, 42)
-            #                 else:
-            #                     log(' %s %s ABOUT TO START PLAYING or stop' % (trackname, clipslot_index))
-            #                     b = rgb_brightness(switch_position, 80)
-            #                     a = rgb_pulse(switch_position, 8)
-            #                     c = color(switch_position, original_color)
+                            if clipslot.has_clip:
+                                self.log(' %s %s HAS CLIP' % (trackname, clipslot_index))
+                                b = rgb_brightness(switch_position, 100)
+                                a = rgb_pulse(switch_position, 5)
+                                c = color(switch_position, 42)
+                            else:
+                                self.log(' %s %s ABOUT TO START PLAYING or stop' % (trackname, clipslot_index))
+                                b = rgb_brightness(switch_position, 80)
+                                a = rgb_pulse(switch_position, 8)
+                                c = color(switch_position, original_color)
+                        lights_status_action = b + a + c
+                        if is_track_visible_in_current_mode(trackname):
+                                self.trigger(lights_status_action)
+                    return clip_slot_is_triggered
 
-            #             if is_track_visible_in_current_mode(trackname):
-            #                     trigger(b + a + c)
-            #             self.mf_current_rgb_brigthness_action_by_switch_pos[switch_position] = b
-            #             self.mf_current_rgb_animation_action_by_switch_pos[switch_position] = a
-            #             self.mf_current_rgb_color_action_by_switch_pos[switch_position] = c
-
-            #         return clip_slot_is_triggered
             if modes[self.current_control_mode_name]:
                 for t in tracklist:
                     if t.name in list(modes[self.current_control_mode_name]["channels"].keys()):
@@ -332,21 +450,21 @@ class MidiFighterActions(UserActionsBase):
                             #     self.log('inside if %s' % key)
                             #     clipslot.remove_has_clip_listener(self.mf_clipslots_has_clip_callbacks[key])
                             new_has_clip_callback = get_clip_slot_has_clip_callback(t.name, tracklist.index(t), clipslot_index, key, original_color)
-                            # clipslot.add_has_clip_listener(new_has_clip_callback)
+                            clipslot.add_has_clip_listener(new_has_clip_callback)
                             # self.mf_clipslots_has_clip_callbacks[key] = new_has_clip_callback
                             new_has_clip_callback()
 
-            # if getattr(self.mf_clipslots_is_triggered_clip_callbacks, key, None) and clipslot.is_triggered_has_listener(self.mf_clipslots_is_triggered_clip_callbacks[key]):
-            #     clipslot.remove_is_triggered_listener(
-            #         self.mf_clipslots_is_triggered_clip_callbacks[key])
-            # new_is_triggered_callback = get_clip_slot_is_triggered(
-            #     t.name, tracklist.index(t), clipslot_index, key, original_color)
-            # clipslot.add_is_triggered_listener(
-            #     new_is_triggered_callback)
-            # self.mf_clipslots_is_triggered_clip_callbacks[key] = new_is_triggered_callback
-            # new_is_triggered_callback()
+                            # if getattr(self.mf_clipslots_is_triggered_clip_callbacks, key, None) and clipslot.is_triggered_has_listener(self.mf_clipslots_is_triggered_clip_callbacks[key]):
+                            #     clipslot.remove_is_triggered_listener(
+                            #         self.mf_clipslots_is_triggered_clip_callbacks[key])
+                            # new_is_triggered_callback = get_clip_slot_is_triggered(
+                            #     t.name, tracklist.index(t), clipslot_index, key, original_color)
+                            # clipslot.add_is_triggered_listener(
+                            #     new_is_triggered_callback)
+                            # self.mf_clipslots_is_triggered_clip_callbacks[key] = new_is_triggered_callback
+                            # new_is_triggered_callback()
 
-            # self.execute_mf_lights_actions()
+           
 
             # remove self.mf_clipslots_callbacks
             # for t in tracklist:
@@ -538,7 +656,7 @@ class MidiFighterActions(UserActionsBase):
             self.log('ERROR change_bank: ' + str(e))
 
     def set_color_schema(self, args):
-        self.start_action('change_bank', args)
+        self.start_action('set_color_schema', "")
         try:
             control_mode_color_schema = args
             result = ""
