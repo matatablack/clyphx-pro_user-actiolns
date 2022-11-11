@@ -3,7 +3,7 @@
 from ClyphX_Pro.clyphx_pro.UserActionsBase import UserActionsBase
 from utils.log_utils import dumpobj
 from utils.defs import colors_by_name, control_modes_defs
-from utils.mf_utils import rgb_brightness, color, rgb_pulse, ind_brightness, ind_pulse, ind_strobe, rgb_animation_off, ind_animation_off
+from utils.mf_utils import rgb_brightness, color, rgb_pulse, rgb_strobe, ind_brightness, ind_pulse, ind_strobe, rgb_animation_off, ind_animation_off
 
 NUM_X_CONTROLS = 34
 
@@ -68,9 +68,9 @@ class MidiFighterActions(UserActionsBase):
         self.add_global_action('set_last_clip_for_switch', self.set_last_clip_for_switch)
         self.add_global_action('mf_shift_switches', self.mf_shift_switches)
         self.add_global_action('mf_finish_execution', self.finish_execution)
-        self.add_global_action('mf_change_bank', self.finish_execution)
-        self.add_global_action('mf_finish_execution', self.finish_execution)
-        # self.add_global_action('populate_last_clip_by_channel', self.populate_last_clip_by_channel)
+        self.add_global_action('mf_change_bank', self.mf_change_bank)
+        self.add_global_action('mf_populate', self.populate_last_clip_by_channel)
+        self.add_global_action('execute_mf_lights_actions', self.execute_mf_lights_actions)
 
     is_execution_blocked = False
     current_action = None
@@ -174,46 +174,45 @@ class MidiFighterActions(UserActionsBase):
     mf_current_ind_animation_action_by_switch_pos = [None] * 17
     mf_current_ind_brightness_action_by_switch_pos = [None] * 17
 
-    # def execute_mf_lights_actions(self):
-    #     try:
-    #         result = ""
-    #         # for x in xrange(0, 16):
-    #         #     self.canonical_parent.log_message(x)
-    #         #     if self.mf_current_rgb_brigthness_action_by_switch_pos[x] != None:
-    #         #         result = result + self.mf_current_rgb_brigthness_action_by_switch_pos[x] + '\n'
-    #         #     if self.mf_current_rgb_color_action_by_switch_pos[x] != None:
-    #         #         result = result + self.mf_current_rgb_color_action_by_switch_pos[x] + '\n'
-    #         #     if self.mf_current_rgb_animation_action_by_switch_pos[x] != None:
-    #         #         result = result + self.mf_current_rgb_animation_action_by_switch_pos[x] + '\n'
-    #         #     if self.mf_current_rgb_animation_action_by_switch_pos[x] != None:
-    #         #         result = result + self.mf_current_rgb_animation_action_by_switch_pos[x] + '\n'
-    #         #     if self.mf_current_ind_animation_action_by_switch_pos[x] != None:
-    #         #         result = result + self.mf_current_ind_animation_action_by_switch_pos[x] + '\n'
-    #         #     if self.mf_current_ind_brightness_action_by_switch_pos[x] != None:
-    #         #         result = result + self.mf_current_ind_brightness_action_by_switch_pos[x] + '\n'
+    def execute_mf_lights_actions(self, action_def, args):
+        try:
+            result = ""
+            # for x in xrange(0, 16):
+            #     self.canonical_parent.log_message(x)
+            #     if self.mf_current_rgb_brigthness_action_by_switch_pos[x] != None:
+            #         result = result + self.mf_current_rgb_brigthness_action_by_switch_pos[x] + '\n'
+            #     if self.mf_current_rgb_color_action_by_switch_pos[x] != None:
+            #         result = result + self.mf_current_rgb_color_action_by_switch_pos[x] + '\n'
+            #     if self.mf_current_rgb_animation_action_by_switch_pos[x] != None:
+            #         result = result + self.mf_current_rgb_animation_action_by_switch_pos[x] + '\n'
+            #     if self.mf_current_rgb_animation_action_by_switch_pos[x] != None:
+            #         result = result + self.mf_current_rgb_animation_action_by_switch_pos[x] + '\n'
+            #     if self.mf_current_ind_animation_action_by_switch_pos[x] != None:
+            #         result = result + self.mf_current_ind_animation_action_by_switch_pos[x] + '\n'
+            #     if self.mf_current_ind_brightness_action_by_switch_pos[x] != None:
+            #         result = result + self.mf_current_ind_brightness_action_by_switch_pos[x] + '\n'
 
-    #         # self.canonical_parent.log_message(result)
-    #         # self.canonical_parent.clyphx_pro_component.trigger_action_list(result);
-    #     except BaseException as e:
-    #         self.canonical_parent.log_message(
-    #             'ERROR execute_mf_lights_actions: ' + str(e))
+            # self.canonical_parent.log_message(result)
+            # self.canonical_parent.clyphx_pro_component.trigger_action_list(result);
+        except BaseException as e:
+            self.canonical_parent.log_message('ERROR execute_mf_lights_actions: ' + str(e))
 
     def populate_last_clip_by_channel(self, action_def, args):
         try:
             self.start_action('populate_last_clip_by_channel', args)
 
-            # def is_track_visible_in_current_mode(track_name):
-            #     return True if modes[self.current_control_mode_name]['channels'][str(track_name)] else False
-            # def get_switch_position_by_track_name(track_name, clipslot):
-            #     position = modes[self.current_control_mode_name]['channels'][str(track_name)]['encoders'][clipslot]
-            #     return position
+            def is_track_visible_in_current_mode(track_name):
+                return True if modes[self.current_control_mode_name]['channels'][str(track_name)] else False
+            def get_switch_position_by_track_name(track_name, clipslot):
+                position = modes[self.current_control_mode_name]['channels'][str(track_name)]['encoders'][clipslot]
+                return position
 
-            # tracklist = list(self.song().tracks)
+            tracklist = list(self.song().tracks)
 
-            # def get_track_by_name(name):
-            #     for t in list(tracklist):
-            #         if t.name == name:
-            #             return t
+            def get_track_by_name(name):
+                for t in tracklist:
+                    if t.name == name:
+                        return t
 
             #     def get_clip_playing_status_callback(trackname, track_index, clipslot_index, key, original_color):
             #         log('registering clip_playing_status_callback for %s %s %s ' % (track_index, trackname, clipslot_index))
@@ -249,40 +248,40 @@ class MidiFighterActions(UserActionsBase):
 
             #         return clip_playing_status_callback
 
-            #     def get_clip_slot_has_clip_callback(trackname, track_index, clipslot_index, key, original_color):
-            #         log('registering clip_slot_has_clip for %s %s %s ' % (track_index, trackname, clipslot_index))
-            #         def clip_slot_has_clip_callback():
-            #             clipslot = get_track_by_name(trackname).clip_slots[clipslot_index]
-            #             switch_position = get_switch_position_by_track_name(trackname, clipslot_index)
+            def get_clip_slot_has_clip_callback(trackname, track_index, clipslot_index, key, original_color):
+                self.log('registering clip_slot_has_clip for %s %s %s ' % (track_index, trackname, clipslot_index))
+                def clip_slot_has_clip_callback():
+                    clipslot = get_track_by_name(trackname).clip_slots[clipslot_index]
+                    switch_position = get_switch_position_by_track_name(trackname, clipslot_index)
 
-            #             # trigger('set_last_clip_for_switch "%s" %s "%s";' % (trackname, switch_position, clipslot_index))
-            #             b = ""
-            #             a = ""
-            #             c = ""
-            #             if clipslot.has_clip:
-            #                 log('HAS CLIP %s %s %s' % (track_index, trackname, clipslot_index))
-            #                 if is_track_visible_in_current_mode(trackname):
-            #                     log(switch_position)
-            #                     b = rgb_brightness(switch_position, 100)
-            #                 else:
-            #                     log('Updated track not visible in current mode')
+                    # trigger('set_last_clip_for_switch "%s" %s "%s";' % (trackname, switch_position, clipslot_index))
+                    b = ""
+                    a = ""
+                    c = ""
+                    if clipslot.has_clip:
+                        self.log('HAS CLIP %s %s %s' % (track_index, trackname, clipslot_index))
+                        if is_track_visible_in_current_mode(trackname):
+                            self.log(switch_position)
+                            b = rgb_brightness(switch_position, 100)
+                        else:
+                            self.log('Updated track not visible in current mode')
 
-            #                 if getattr(self.mf_clips_playing_status_callbacks, key, None) and clipslot.clip.playing_status_has_listener(self.mf_clips_playing_status_callbacks[key]):
-            #                     log("REMOVING LISTENER for %s %s" % (trackname, clipslot_index))
-            #                     clipslot.clip.remove_playing_status_listener(self.mf_clips_playing_status_callbacks[key])
-            #                 new_playing_status = get_clip_playing_status_callback(trackname, track_index, clipslot_index, key, original_color)
-            #                 clipslot.clip.add_playing_status_listener(new_playing_status)
-            #                 self.mf_clips_playing_status_callbacks[key] = new_playing_status
-            #             else:
-            #                 log('NO CLIP %s' % trackname)
-            #                 b = rgb_brightness(switch_position, 50)
-            #                 a = rgb_strobe(switch_position, 0)
-            #                 c = color(switch_position, original_color)
-            #             if is_track_visible_in_current_mode(trackname):
-            #                 trigger(b + a + c)
-            #             self.mf_current_rgb_brigthness_action_by_switch_pos[switch_position] = b
+                        # if getattr(self.mf_clips_playing_status_callbacks, key, None) and clipslot.clip.playing_status_has_listener(self.mf_clips_playing_status_callbacks[key]):
+                        #     self.log("REMOVING LISTENER for %s %s" % (trackname, clipslot_index))
+                        #     clipslot.clip.remove_playing_status_listener(self.mf_clips_playing_status_callbacks[key])
+                        # new_playing_status = get_clip_playing_status_callback(trackname, track_index, clipslot_index, key, original_color)
+                        # clipslot.clip.add_playing_status_listener(new_playing_status)
+                        # self.mf_clips_playing_status_callbacks[key] = new_playing_status
+                    else:
+                        self.log('NO CLIP %s' % trackname)
+                        b = rgb_brightness(switch_position, 50)
+                        a = rgb_strobe(switch_position, 0)
+                        c = color(switch_position, original_color)
+                    if is_track_visible_in_current_mode(trackname):
+                        self.trigger(b + a + c)
+                    self.mf_current_rgb_brigthness_action_by_switch_pos[switch_position] = b
 
-            #         return clip_slot_has_clip_callback
+                return clip_slot_has_clip_callback
 
             #     def get_clip_slot_is_triggered(trackname, track_index, clipslot_index, key, original_color):
             #         def clip_slot_is_triggered():
@@ -317,26 +316,25 @@ class MidiFighterActions(UserActionsBase):
             #             self.mf_current_rgb_color_action_by_switch_pos[switch_position] = c
 
             #         return clip_slot_is_triggered
-
-            # for t in tracklist:
-            #     if t.name in list(modes["instrument_control_2"]["channels"].keys()):
-            #         log('Start Adding listeners to clipslot on track %s' % t.name)
-            #         original_color = colors_by_name[str(t.name.split("[MIDI]")[0].strip())]["default"]
-            #         for clipslot_index in range(0, 2):
-            #             clipslot = t.clip_slots[clipslot_index]
-            #             name = str(t.name)
-            #             index = str(clipslot_index)
-            #             key = name + index
-            # # remove previous listener if has one
-            # if getattr(self.mf_clipslots_has_clip_callbacks, key, None) and clipslot.has_clip_has_listener(self.mf_clipslots_has_clip_callbacks[key]):
-            #     log('inside if %s' % key)
-            #     clipslot.remove_has_clip_listener(
-            #         self.mf_clipslots_has_clip_callbacks[key])
-            # new_has_clip_callback = get_clip_slot_has_clip_callback(
-            #     t.name, tracklist.index(t), clipslot_index, key, original_color)
-            # clipslot.add_has_clip_listener(new_has_clip_callback)
-            # self.mf_clipslots_has_clip_callbacks[key] = new_has_clip_callback
-            # new_has_clip_callback()
+            if modes[self.current_control_mode_name]:
+                for t in tracklist:
+                    if t.name in list(modes[self.current_control_mode_name]["channels"].keys()):
+                        self.log('Start Adding listeners to clipslot on track %s' % t.name)
+                        original_color = colors_by_name[str(t.name.split("[MIDI]")[0].strip())]["default"]
+                        for clipslot_index in range(0, 2):
+                            clipslot = t.clip_slots[clipslot_index]
+                            name = str(t.name)
+                            index = str(clipslot_index)
+                            key = name + index
+                            self.log(key)
+                            # remove previous listener if has one
+                            # if getattr(self.mf_clipslots_has_clip_callbacks, key, None) and clipslot.has_clip_has_listener(self.mf_clipslots_has_clip_callbacks[key]):
+                            #     self.log('inside if %s' % key)
+                            #     clipslot.remove_has_clip_listener(self.mf_clipslots_has_clip_callbacks[key])
+                            new_has_clip_callback = get_clip_slot_has_clip_callback(t.name, tracklist.index(t), clipslot_index, key, original_color)
+                            # clipslot.add_has_clip_listener(new_has_clip_callback)
+                            # self.mf_clipslots_has_clip_callbacks[key] = new_has_clip_callback
+                            new_has_clip_callback()
 
             # if getattr(self.mf_clipslots_is_triggered_clip_callbacks, key, None) and clipslot.is_triggered_has_listener(self.mf_clipslots_is_triggered_clip_callbacks[key]):
             #     clipslot.remove_is_triggered_listener(
@@ -361,8 +359,7 @@ class MidiFighterActions(UserActionsBase):
             #             t.clip_slots[clipslot_index].remove_add_has_clip_listener(self.mf_clipslots_callbacks[key])
 
         except BaseException as e:
-            log(
-                'ERROR: populate_last_clip_by_channel ' + str(e))
+            self.canonical_parent.log_message('ERROR: populate_last_clip_by_channel ' + str(e))
 
     def delete_last_clip(self, action_def, args):
         try:
@@ -532,7 +529,7 @@ class MidiFighterActions(UserActionsBase):
         except BaseException as e:
             self.log('ERROR: ' + str(e))
 
-    def change_bank(self, action_def, args):
+    def mf_change_bank(self, action_def, args):
         try:
             self.start_action('change_bank', args)
             bank_number = int(args) - 1
