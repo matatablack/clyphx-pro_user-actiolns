@@ -1,7 +1,6 @@
 drum_machine_names_mapping_array = ["Kick", "Snare", "CHH", "Perc"]
 
-column_controls_1 = ["SEND A", "SEND B", "DEV(2) P1", "DEV(2) P2"]
-
+column_controls_1 = ["SEND A", "SEND B", "SEND B", "DEV(2) P2"]
 colors_by_name = {
     "Kick": {
         "default": 63,
@@ -88,28 +87,28 @@ colors_by_name = {
 
 
 instrument_control_0 = """ 
-    tpl change_bank 1;
+    mf_change_bank 1;
     bind mf_b1_e1 "Kick"/SEND A;
-    bind mf_b1_e5 "Kick"/DEV(2) P1;
-    bind mf_b1_e9 "Kick"/DEV(2) P2;
-    bind mf_b1_e13 "Kick"/DEV(2) P3;
+    bind mf_b1_e5 "Kick"/SEND B;
+    bind mf_b1_e9 "Kick"/DEV(2) P1;
+    bind mf_b1_e13 "Kick"/DEV(2) P2;
     bind mf_b1_e2 "Minitaur"/SEND A;
-    bind mf_b1_e6 "Minitaur"/DEV(2) P1;
-    bind mf_b1_e10 "Minitaur"/DEV(2) P2;
-    bind mf_b1_e14 "Minitaur"/DEV(2) P3;
+    bind mf_b1_e6 "Minitaur"/SEND B;
+    bind mf_b1_e10 "Minitaur"/DEV(2) P1;
+    bind mf_b1_e14 "Minitaur"/DEV(2) P2;
     bind mf_b1_e3 "Drums"/SEND A;
-    bind mf_b1_e7 "Drums"/DEV(2) P1;
-    bind mf_b1_e11 "Drums"/DEV(2) P2;
-    bind mf_b1_e15 "Drums"/DEV(2) P3;
+    bind mf_b1_e7 "Drums"/SEND B;
+    bind mf_b1_e11 "Drums"/DEV(2) P1;
+    bind mf_b1_e15 "Drums"/DEV(2) P2;
     bind mf_b1_e4 "Omni 4"/SEND A;
-    bind mf_b1_e8 "Omni 4"/DEV(2) P1;
-    bind mf_b1_e12 "Omni 4"/DEV(2) P2;
-    bind mf_b1_e16 "Omni 4"/DEV(2) P3;
+    bind mf_b1_e8 "Omni 4"/SEND B;
+    bind mf_b1_e12 "Omni 4"/DEV(2) P1;
+    bind mf_b1_e16 "Omni 4"/DEV(2) P2;
  """
 
 instrument_control_0_bank2 = """ 
 
-    tpl change_bank 2;
+    mf_change_bank 2;
 
     bind mf_b2_s5 "Kick"/SOLO;
     bind mf_b2_s9 "Kick"/MUTE;
@@ -149,28 +148,28 @@ instrument_control_0_bank2 = """
  """
 
 instrument_control_1 = """ 
-    tpl change_bank 1;
+    mf_change_bank 1;
 
     bind mf_b1_e1 "Omni 1"/SEND A;
-    bind mf_b1_e5 "Omni 1"/DEV(2) P1;
-    bind mf_b1_e9 "Omni 1"/DEV(2) P2;
-    bind mf_b1_e13 "Omni 1"/DEV(2) P3;
+    bind mf_b1_e5 "Omni 1"/SEND B;
+    bind mf_b1_e9 "Omni 1"/DEV(2) P1;
+    bind mf_b1_e13 "Omni 1"/DEV(2) P2;
     bind mf_b1_e2 "V. Bass"/SEND A;
-    bind mf_b1_e6 "V. Bass"/DEV(2) P1;
-    bind mf_b1_e10 "V. Bass"/DEV(2) P2;
-    bind mf_b1_e14 "V. Bass"/DEV(2) P3;
+    bind mf_b1_e6 "V. Bass"/SEND B;
+    bind mf_b1_e10 "V. Bass"/DEV(2) P1;
+    bind mf_b1_e14 "V. Bass"/DEV(2) P2;
     bind mf_b1_e3 "SH01A"/SEND A;
-    bind mf_b1_e7 "SH01A"/DEV(2) P1;
-    bind mf_b1_e11 "SH01A"/DEV(2) P2;
-    bind mf_b1_e15 "SH01A"/DEV(2) P3;
+    bind mf_b1_e7 "SH01A"/SEND B;
+    bind mf_b1_e11 "SH01A"/DEV(2) P1;
+    bind mf_b1_e15 "SH01A"/DEV(2) P2;
     bind mf_b1_e4 "TB3"/SEND A;
-    bind mf_b1_e8 "TB3"/DEV(2) P1;
-    bind mf_b1_e12 "TB3"/DEV(2) P2;
-    bind mf_b1_e16 "TB3"/DEV(2) P3;
+    bind mf_b1_e8 "TB3"/SEND B;
+    bind mf_b1_e12 "TB3"/DEV(2) P1;
+    bind mf_b1_e16 "TB3"/DEV(2) P2;
  """
 
 instrument_control_1_bank2 = """ 
-    tpl change_bank 2;
+    mf_change_bank 2;
 
     bind mf_b2_s5 "Omni 1"/SOLO;
     bind mf_b2_s9 "Omni 1"/MUTE;
@@ -210,28 +209,28 @@ instrument_control_1_bank2 = """
  """
 
 instrument_control_2 = """ 
-    tpl change_bank 1;
+    mf_change_bank 1;
 
     bind mf_b1_e1 "Grandmother"/SEND A;
-    bind mf_b1_e5 "Grandmother"/DEV(2) P1;
-    bind mf_b1_e9 "Grandmother"/DEV(2) P2;
-    bind mf_b1_e13 "Grandmother"/DEV(2) P3;
+    bind mf_b1_e5 "Grandmother"/SEND B;
+    bind mf_b1_e9 "Grandmother"/DEV(2) P1;
+    bind mf_b1_e13 "Grandmother"/DEV(2) P2;
     bind mf_b1_e2 "Deepmind"/SEND A;
-    bind mf_b1_e6 "Deepmind"/DEV(2) P1;
-    bind mf_b1_e10 "Deepmind"/DEV(2) P2;
-    bind mf_b1_e14 "Deepmind"/DEV(2) P3;
+    bind mf_b1_e6 "Deepmind"/SEND B;
+    bind mf_b1_e10 "Deepmind"/DEV(2) P1;
+    bind mf_b1_e14 "Deepmind"/DEV(2) P2;
     bind mf_b1_e3 "Omni 2"/SEND A;
-    bind mf_b1_e7 "Omni 2"/DEV(2) P1;
-    bind mf_b1_e11 "Omni 2"/DEV(2) P2;
-    bind mf_b1_e15 "Omni 2"/DEV(2) P3;
+    bind mf_b1_e7 "Omni 2"/SEND B;
+    bind mf_b1_e11 "Omni 2"/DEV(2) P1;
+    bind mf_b1_e15 "Omni 2"/DEV(2) P2;
     bind mf_b1_e4 "GTR VOX"/SEND A;
-    bind mf_b1_e8 "GTR VOX"/DEV(2) P1;
-    bind mf_b1_e12 "GTR VOX"/DEV(2) P2;
-    bind mf_b1_e16 "GTR VOX"/DEV(2) P3;
+    bind mf_b1_e8 "GTR VOX"/SEND B;
+    bind mf_b1_e12 "GTR VOX"/DEV(2) P1;
+    bind mf_b1_e16 "GTR VOX"/DEV(2) P2;
  """
 
 instrument_control_2_bank2 = """ 
-    tpl change_bank 2;
+    mf_change_bank 2;
     
     bind mf_b2_s5 "Grandmother"/SOLO;
     bind mf_b2_s9 "Grandmother"/MUTE;
@@ -268,28 +267,28 @@ instrument_control_2_bank2 = """
  """
 
 instrument_control_3 = """ 
-    tpl change_bank 1;
+    mf_change_bank 1;
 
     bind mf_b1_e1 "BASS COMP"/SEND A;
-    bind mf_b1_e5 "BASS COMP"/DEV(2) P1;
-    bind mf_b1_e9 "BASS COMP"/DEV(2) P2;
-    bind mf_b1_e13 "BASS COMP"/DEV(2) P3;
+    bind mf_b1_e5 "BASS COMP"/SEND B;
+    bind mf_b1_e9 "BASS COMP"/DEV(2) P1;
+    bind mf_b1_e13 "BASS COMP"/DEV(2) P2;
     bind mf_b1_e2 "Yamaha"/SEND A;
-    bind mf_b1_e6 "Yamaha"/DEV(2) P1;
-    bind mf_b1_e10 "Yamaha"/DEV(2) P2;
-    bind mf_b1_e14 "Yamaha"/DEV(2) P3;
+    bind mf_b1_e6 "Yamaha"/SEND B;
+    bind mf_b1_e10 "Yamaha"/DEV(2) P1;
+    bind mf_b1_e14 "Yamaha"/DEV(2) P2;
     bind mf_b1_e3 "Omni 3"/SEND A;
-    bind mf_b1_e7 "Omni 3"/DEV(2) P1;
-    bind mf_b1_e11 "Omni 3"/DEV(2) P2;
-    bind mf_b1_e15 "Omni 3"/DEV(2) P3;
+    bind mf_b1_e7 "Omni 3"/SEND B;
+    bind mf_b1_e11 "Omni 3"/DEV(2) P1;
+    bind mf_b1_e15 "Omni 3"/DEV(2) P2;
     bind mf_b1_e4 "GTR Acus"/SEND A;
-    bind mf_b1_e8 "GTR Acus"/DEV(2) P1;
-    bind mf_b1_e12"GTR Acus"/DEV(2) P2;
-    bind mf_b1_e16 "GTR Acus"/DEV(2) P2;
+    bind mf_b1_e8 "GTR Acus"/SEND B;
+    bind mf_b1_e12"GTR Acus"/DEV(2) P1;
+    bind mf_b1_e16 "GTR Acus"/DEV(2) 22;
  """
 
 instrument_control_3_bank2 = """ 
-    tpl change_bank 2;
+    mf_change_bank 2;
     
     bind mf_b2_s5 "BASS COMP"/SOLO;
     bind mf_b2_s9 "BASS COMP"/MUTE;
@@ -349,27 +348,27 @@ master_fx_and_sends = """
  """
 
 live_1 = """ 
-    tpl change_bank 1;
+    mf_change_bank 1;
     bind mf_b1_e1 "Drums"/SEND A;
-    bind mf_b1_e5 "Drums"/DEV(2) P1;
-    bind mf_b1_e9 "Drums"/DEV(2) P2;
-    bind mf_b1_e13 "Drums"/DEV(2) P3;
+    bind mf_b1_e5 "Drums"/SEND B;
+    bind mf_b1_e9 "Drums"/DEV(2) P1;
+    bind mf_b1_e13 "Drums"/DEV(2) P2;
     bind mf_b1_e2 "Yamaha"/SEND A;
-    bind mf_b1_e6 "Yamaha"/DEV(2) P1;
-    bind mf_b1_e10 "Yamaha"/DEV(2) P2;
-    bind mf_b1_e14 "Yamaha"/DEV(2) P3;
+    bind mf_b1_e6 "Yamaha"/SEND B;
+    bind mf_b1_e10 "Yamaha"/DEV(2) P1;
+    bind mf_b1_e14 "Yamaha"/DEV(2) P2;
     bind mf_b1_e3 "Omni 1"/SEND A;
-    bind mf_b1_e7 "Omni 1"/DEV(2) P1;
-    bind mf_b1_e11 "Omni 1"/DEV(2) P2;
-    bind mf_b1_e15 "Omni 1"/DEV(2) P3;
+    bind mf_b1_e7 "Omni 1"/SEND B;
+    bind mf_b1_e11 "Omni 1"/DEV(2) P1;
+    bind mf_b1_e15 "Omni 1"/DEV(2) P2;
     bind mf_b1_e4 "GTR VOX"/SEND A;
-    bind mf_b1_e8 "GTR VOX"/DEV(2) P1;
-    bind mf_b1_e12 "GTR VOX"/DEV(2) P2;
-    bind mf_b1_e16 "GTR VOX"/DEV(2) P3;
+    bind mf_b1_e8 "GTR VOX"/SEND B;
+    bind mf_b1_e12 "GTR VOX"/DEV(2) P1;
+    bind mf_b1_e16 "GTR VOX"/DEV(2) P2;
  """
 
 live_1_bank2 = """ 
-    tpl change_bank 2;
+    mf_change_bank 2;
     
     bind mf_b2_s5 "Drums"/SOLO;
     bind mf_b2_s9 "Drums"/MUTE;

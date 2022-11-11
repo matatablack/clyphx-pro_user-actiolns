@@ -329,7 +329,7 @@ class TemplateBase:
                 ALL/ARM OFF;
                 SEL/ARM ON;
                 SEL/DEV("Gen") SEL;
-                tpl change_bank 1;
+                mf_change_bank 1;
                 tpl bind default_binding;
                 WAIT 2;
                 SRECFIX {rec_fix};
