@@ -481,13 +481,13 @@ class MidiFighterActions(UserActionsBase):
                 if track.clip_slots[clipslot].clip.is_recording:
                     # TODO avoid if cancelled
                     while_rec_actions = '''
-                            # MIDI CC 2 {switch_index} {rec_color};
-                            # MIDI CC 6 {switch_index} 6;
-                            # WAITS {fixed_rec_bars_half}B;
-                            # MIDI CC 2 {switch_index} {rec_color2};
-                            # MIDI CC 6 {switch_index} 7;
-                            # WAITS {fixed_rec_bars_half_minus_16}B;
-                            # {track_index}/play {clipslot};
+                            ## MIDI CC 2 {switch_index} {rec_color};
+                            ## MIDI CC 6 {switch_index} 6;
+                            ## WAITS {fixed_rec_bars_half}B;
+                            ## MIDI CC 2 {switch_index} {rec_color2};
+                            ## MIDI CC 6 {switch_index} 7;
+                            ## WAITS {fixed_rec_bars_half_minus_16}B;
+                            ## {track_index}/play {clipslot};
                         '''.format(**merge_two_dicts(dictionary, dict2))
                     self.trigger(while_rec_actions)
                     self.log(while_rec_actions)
