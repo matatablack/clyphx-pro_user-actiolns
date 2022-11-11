@@ -451,15 +451,15 @@ class MidiFighterActions(UserActionsBase):
             }
 
             actions = '''
-                # MIDI CC 2 {switch_index} {original_color};
+                ## MIDI CC 2 {switch_index} {original_color};
                 METRO ON;
                 "{channel_name}"/SEL;
                 "{channel_name}"/ARM ON;
                 {mon_auto_if_not_midi}
-                # MIDI CC 2 {switch_index} {original_color};
-                # MIDI CC 6 {switch_index} 15;
+                ## MIDI CC 2 {switch_index} {original_color};
+                ## MIDI CC 6 {switch_index} 15;
                 {track_index}/play {clipslot};
-                # MIDI CC 2 {switch_index} {original_color};
+                ## MIDI CC 2 {switch_index} {original_color};
             '''.format(**dictionary)
 
             def merge_two_dicts(x, y):
@@ -496,9 +496,9 @@ class MidiFighterActions(UserActionsBase):
                 self.log('RECORDING STOPPED')
                 if not track.clip_slots[clipslot].clip.is_recording:
                     post_rec_actions = '''
-                        # set_last_clip_for_switch "{channel_name}" {switch_number} "{clipslot}";
-                        # MIDI CC 2 {switch_index} {original_color};
-                        # MIDI CC 6 {switch_index} 0;
+                        ## set_last_clip_for_switch "{channel_name}" {switch_number} "{clipslot}";
+                        ## MIDI CC 2 {switch_index} {original_color};
+                        ## MIDI CC 6 {switch_index} 0;
                         WAITS 1;
                         METRO OFF;
                         "{channel_name}"/ARM OFF;
@@ -507,8 +507,8 @@ class MidiFighterActions(UserActionsBase):
                     self.log(post_rec_actions)
                 else:
                     post_rec_actions = '''
-                        # MIDI CC 2 {switch_index} {original_color};
-                        # MIDI CC 6 {switch_index} 0;
+                        ## MIDI CC 2 {switch_index} {original_color};
+                        ## MIDI CC 6 {switch_index} 0;
                     '''.format(**merge_two_dicts(dictionary, dict2))
                     self.trigger(post_rec_actions)
                     self.log(post_rec_actions)
