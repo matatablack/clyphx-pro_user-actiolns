@@ -11,7 +11,7 @@ modes = {
     "instrument_control_1": {
         "channels": {
             "Omni 1 [MIDI]": {
-                "encoders": [1, 5]
+                "encoders": [1, 5],
             },
             "Omni 1": {
                 "encoders": [9, 13]
@@ -97,8 +97,6 @@ class MidiFighterActions(UserActionsBase):
         self.add_global_action('set_mf_binding', self.set_mf_binding)
         self.add_global_action('record', self.record)
         self.add_global_action('set_record_length', self.set_record_length)
-        self.add_global_action('delete_last_clip', self.delete_last_clip)
-        self.add_global_action('set_last_clip_for_switch', self.set_last_clip_for_switch)
         self.add_global_action('mf_shift_switches', self.mf_shift_switches)
         self.add_global_action('mf_finish_execution', self.finish_execution)
         self.add_global_action('mf_change_bank', self.mf_change_bank)
@@ -136,7 +134,7 @@ class MidiFighterActions(UserActionsBase):
 
     current_control_mode_name = ""
     prev_current_control_mode_name = ""
-    mf_shift_switches = False
+    mf_control_mode_shifted = False
 
     def set_mf_binding(self, action_def, args):
         try:
@@ -157,7 +155,7 @@ class MidiFighterActions(UserActionsBase):
                     mode_name = self.current_control_mode_name + bank_suffix
             else:
                 mode_name = control_mode_name
-            self.prev_current_control_mode_name = self.current_control_mode_name 
+            self.prev_current_control_mode_name = self.current_control_mode_name
             self.current_control_mode_name = mode_name
 
             self.trigger('OSC STR custom/global/action "set_binding";')
@@ -186,9 +184,9 @@ class MidiFighterActions(UserActionsBase):
             args = args.split()
             state = args[0]
             if state == 'on':
-                self.mf_shift_switches = True
+                self.mf_control_mode_shifted = True
             else:
-                self.mf_shift_switches = False
+                self.mf_control_mode_shifted = False
         except BaseException as e:
             self.canonical_parent.log_message('ERROR mf_shift_switches: ' + str(e))
 
@@ -227,31 +225,30 @@ class MidiFighterActions(UserActionsBase):
                     if tracklist[track_index].clip_slots[clipslot_index].has_clip:
                         clip = tracklist[track_index].clip_slots[clipslot_index].clip
                         switch_position = get_switch_position_by_track_name(trackname, clipslot_index)
+                        self.log('clip_playing_status_callback switch_position %s' % (switch_position))
                         b = ""
                         a = ""
                         c = ""
                         if clip.is_recording:
                             self.log('IS RECORDING %s %s %s' % (track_index, trackname, clipslot_index))
-                            b = rgb_brightness(switch_position, 100)
                             a = rgb_strobe(switch_position, 6)
                             c = color(switch_position, 83)
                         elif clip.is_playing:
                             self.log('IS PLAYINGGGG %s %s %s' % (track_index, trackname, clipslot_index))
-                            b = rgb_brightness(switch_position, 100)
                             a = rgb_pulse(switch_position, 7)
                             c = color(switch_position, original_color)
+                            if is_track_visible_in_current_mode(trackname):
+                                # self.trigger(c)
+                                self.trigger(c + a)
                         else:
                             self.log('IS STOPPED %s %s %s' % (track_index, trackname, clipslot_index))
-                            # a = rgb_strobe(switch_position, 6)
-                            # c = color(switch_position, 13)
-                            # b = rgb_brightness(switch_position, 30)
                             a = rgb_strobe(switch_position, 0)
                             c = color(switch_position, original_color)
-                            b = rgb_brightness(switch_position, 100)
-                        lights_status_action = a + c
                         if is_track_visible_in_current_mode(trackname):
-                            self.trigger(lights_status_action)
-                            self.trigger(b)
+                            self.trigger(c)
+                            self.trigger("WAIT 0.5;" + a)
+                            self.trigger("WAIT 2; " + c)
+                            self.trigger(c)
                 return clip_playing_status_callback
 
             def get_clip_slot_has_clip_callback(trackname, track_index, clipslot_index, key, original_color):
@@ -277,14 +274,16 @@ class MidiFighterActions(UserActionsBase):
 
                     else:
                         self.log('NO CLIP return to original color %s' % trackname)
-                        b = rgb_brightness(switch_position, 30)
-                        a = rgb_strobe(switch_position, 0)
+                        b = rgb_brightness(switch_position, 15)
+                        # a = rgb_strobe(switch_position, 0)
                         c = color(switch_position, original_color)
-                    
+
                     lights_status_action = a + c
                     if is_track_visible_in_current_mode(trackname):
-                        self.trigger(lights_status_action)
-                        self.trigger(b)
+                        self.trigger(a)
+                        self.trigger('WAIT 0.5; ' + b)
+                        self.trigger('WAIT 0.5; ' + c)
+                        self.trigger('WAIT 1; ' + c)
 
                 return clip_slot_has_clip_callback
 
@@ -301,44 +300,40 @@ class MidiFighterActions(UserActionsBase):
                             self.log(' AND HAS CLIP')
                             if clipslot.will_record_on_start:
                                 self.log(' AND ITS ABOUT TO RECORD')
-                                b = rgb_brightness(switch_position, 100)
-                                a = rgb_strobe(switch_position, 8)
-                                c = color(switch_position, 75)
+                                # b = rgb_brightness(switch_position, 100)
+                                a = rgb_strobe(switch_position, 7)
+                                c = color(switch_position, 44)
                             else:
                                 self.log(' ITS RETTRIGERING EXISTING CLIP, GREEN')
-                                b = rgb_brightness(switch_position, 100)
+                                # b = rgb_brightness(switch_position, 100)
                                 a = rgb_pulse(switch_position, 7)
                                 c = color(switch_position, 44)
                         else:
-                            if clipslot.will_record_on_start:    
+                            if clipslot.will_record_on_start:
                                 self.log(' %s %s ITS ABOUT TO RECORD' % (trackname, clipslot_index))
-                                b = rgb_brightness(switch_position, 100)
-                                a = rgb_strobe(switch_position, 8)
-                                c = color(switch_position, 75)
+                                a = rgb_strobe(switch_position, 7)
+                                c = color(switch_position, 44)
                     else:
                         self.log(' %s %s IS NOT TRIGGERED ANYMORE' % (trackname, clipslot_index))
                         if clipslot.clip:
                             if clipslot.clip.is_recording:
                                 self.log('is_triggered IS RECORDING %s %s %s' % (track_index, trackname, clipslot_index))
-                                b = rgb_brightness(switch_position, 100)
                                 a = rgb_strobe(switch_position, 6)
                                 c = color(switch_position, 83)
                             elif clipslot.clip.is_playing:
                                 self.log('is_triggered IS PLAYINGGGG %s %s %s' % (track_index, trackname, clipslot_index))
-                                b = rgb_brightness(switch_position, 100)
                                 a = rgb_pulse(switch_position, 7)
                                 c = color(switch_position, original_color)
                             else:
                                 self.log('is_triggered IS STOPPED %s %s %s' % (track_index, trackname, clipslot_index))
-                                b = rgb_brightness(switch_position, 100)
                                 a = rgb_strobe(switch_position, 0)
                                 c = color(switch_position, original_color)
-                    lights_status_action = b + a + c
                     if is_track_visible_in_current_mode(trackname):
-                            self.trigger(lights_status_action)
-                    self.log(lights_status_action)
+                        self.trigger(a)
+                        self.trigger('WAIT 1; ' + c)
+                        self.trigger('WAIT 2; ' + c)
                 return clip_slot_is_triggered
-                                
+
 
 
             self.log('CURRENT current_control_mode_name %s' % self.current_control_mode_name)
@@ -365,7 +360,7 @@ class MidiFighterActions(UserActionsBase):
                                     self.log('SUCCESSFULLy remove_playing_status_listener %s' % key)
                                     clipslot.clip.remove_playing_status_listener(self.mf_clips_playing_status_callbacks[key])
                                     del self.mf_clips_playing_status_callbacks[key]
-                        
+
                     if t.name in list(modes[self.current_control_mode_name]['channels'].keys()):
                         self.log('Start Adding listeners to clipslot on track %s' % t.name)
                         original_color = colors_by_name[str(t.name.split("[MIDI]")[0].strip())]["default"]
@@ -374,10 +369,6 @@ class MidiFighterActions(UserActionsBase):
                             name = str(t.name)
                             index = str(clipslot_index)
                             key = name + index
-
-                            switch_number = get_switch_position_by_track_name(t.name, clipslot_index)
-                            self.trigger('set_last_clip_for_switch "%s" %s"%s";' % (t.name, switch_number - 1, clipslot_index))
-                            
 
                             new_is_triggered_callback = get_clip_slot_is_triggered(t.name, tracklist.index(t), clipslot_index, key, original_color)
                             clipslot.add_is_triggered_listener(new_is_triggered_callback)
@@ -392,39 +383,15 @@ class MidiFighterActions(UserActionsBase):
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: populate_last_clip_by_channel ' + str(e))
 
-    def delete_last_clip(self, action_def, args):
-        try:
-            self.start_action('delete_last_clip', args)
-            args = args.split('"')
-            channel_name = args[1]
-            switch_number = int(args[2])
-            original_color = colors_by_name[str(channel_name.split("[MIDI]")[0].strip())]["default"]
-            self.log(str(self.last_clip_by_channel))
-            channel_switches = self.last_clip_by_channel[str(channel_name)] if self.last_clip_by_channel.get(channel_name) else None
-            self.log("channel_switches: %s " % str(channel_switches))
-            clipslot = channel_switches[str(switch_number)] if channel_switches else None
-            self.log("ACTIVE CLIPSLOT FOR SWITCH: %s " % str(clipslot))
-
-            dictionary = {
-                'channel_name': channel_name,
-                'clipslot': clipslot,
-                'original_color': original_color
-            }
-            if clipslot:
-                actions = '''"{channel_name}"/CLIP({clipslot}) DEL;'''.format(**dictionary)
-                self.canonical_parent.clyphx_pro_component.trigger_action_list(actions)
-                self.log(actions)
-            else:
-                self.log("No clip on %s switch %s" % (channel_name, switch_number))
-        except BaseException as e:
-            self.canonical_parent.log_message('Error delete_last_clip' + str(e))
 
     def record(self, action_def, args):
         try:
             self.start_action('record', args)
             args = args.split('"')
             channel_name = args[1]
-            switch_number = int(args[2])
+            second_part = args[2].strip().split()
+            switch_number = int(second_part[0])
+            autostop = len(second_part) > 1 and second_part[1] == "autostop"
             original_color = colors_by_name[str(channel_name.split("[MIDI]")[0].strip())]["default"]
 
             tracklist = list(self.song().tracks)
@@ -434,131 +401,99 @@ class MidiFighterActions(UserActionsBase):
                     track = t
 
             track_index = tracklist.index(track) + 1
-            cliplist = list(track.clip_slots)
 
-            try:
-                channel_switches = self.last_clip_by_channel[str(channel_name)] if self.last_clip_by_channel.get(str(channel_name)) else None
-                clipslot = channel_switches[str(switch_number)] if channel_switches else None
-                self.log("ACTIVE CLIPSLOT FOR SWITCH: %s " % str(clipslot))
-                if track.clip_slots[int(clipslot) - 1].has_clip:
-                    if self.mf_shift_switches:
-                        return track.clip_slots[int(clipslot) - 1].delete_clip()
-                    if track.clip_slots[int(clipslot) - 1].clip.is_playing:
-                        return track.clip_slots[int(clipslot) - 1].stop()
-                    else:
-                        return track.clip_slots[int(clipslot) - 1].fire()
-            except:
-                self.log('no playing clip')
 
-            for clip in track.clip_slots:
-                if clip.has_clip:
-                    self.log('clip exists')
-                elif cliplist.index(clip) == 0:
-                    clipslot = cliplist.index(clip)
-                    break
+            self.log(" self.mf_control_mode_shifted ---- %s " % str(self.mf_control_mode_shifted))
+            self.log(" BEFORE ")
+            encoders = list(modes.get(self.current_control_mode_name)['channels'][str(channel_name)]['encoders'])
+            self.log(" ---- encoders: ---- %s " % str(encoders))
+            self.log(" ---- switch_number: ---- %s " % str(switch_number))
+            clipslot_index = encoders.index(switch_number)
+            self.log(" ---- clipslot_index: ---- %s " % str(clipslot_index))
+            self.log(" AFTER ")
+            self.log(" ---- ACTIVE CLIPSLOT FOR SWITCH: ---- %s " % str(clipslot_index))
+            if track.clip_slots[clipslot_index].has_clip:
+                if self.mf_control_mode_shifted:
+                    self.log(" SHIFT IS ACTIVE ABOUT TO DELETE: ---- %s " % str(clipslot_index))
+                    return track.clip_slots[clipslot_index].delete_clip()
+                if autostop and track.clip_slots[clipslot_index].is_recording:
+                    return track.clip_slots[clipslot_index].fire()
+                if track.clip_slots[clipslot_index].is_recording:
+                    return track.clip_slots[clipslot_index].fire()
+                if track.clip_slots[clipslot_index].clip.is_playing:
+                    return track.clip_slots[clipslot_index].stop()
                 else:
-                    clipslot = cliplist.index(clip) - 1
-                    break
+                    return track.clip_slots[clipslot_index].fire()
+            else:
+                self.log('no playing clip, start recording')
 
-            if track.clip_slots[clipslot].is_recording:
-                return track.clip_slots[clipslot].fire()
-            elif track.clip_slots[clipslot].has_clip:
-                self.log('not recording, start recording on next slot')
-                clipslot += 1
+                dictionary = {
+                    'channel_name': channel_name,
+                    'switch_index': switch_number - 1,
+                    'original_color': original_color,
+                    'rec_color': 79,
+                    'rec_color2': 83,
+                    'track_index': track_index,
+                    'clipslot': clipslot_index + 1,
+                    'switch_number': switch_number,
+                    'mon_auto_if_not_midi': '"%s"/MON AUTO;' % channel_name if not "[MIDI]" in channel_name else ""
+                }
 
-            dictionary = {
-                'channel_name': channel_name,
-                'switch_index': switch_number - 1,
-                'original_color': original_color,
-                'rec_color': 79,
-                'rec_color2': 83,
-                'track_index': track_index,
-                'clipslot': clipslot + 1,
-                'switch_number': switch_number,
-                'mon_auto_if_not_midi': '"%s"/MON AUTO;' % channel_name if not "[MIDI]" in channel_name else ""
-            }
+                actions = '''
+                    METRO ON;
+                    "{channel_name}"/SEL;
+                    "{channel_name}"/ARM ON;
+                    {mon_auto_if_not_midi}
+                    {track_index}/play {clipslot};
+                '''.format(**dictionary)
 
-            actions = '''
-                ## MIDI CC 2 {switch_index} {original_color};
-                METRO ON;
-                "{channel_name}"/SEL;
-                "{channel_name}"/ARM ON;
-                {mon_auto_if_not_midi}
-                ## MIDI CC 2 {switch_index} {original_color};
-                ## MIDI CC 6 {switch_index} 15;
-                {track_index}/play {clipslot};
-                ## MIDI CC 2 {switch_index} {original_color};
-            '''.format(**dictionary)
+                def merge_two_dicts(x, y):
+                    z = x.copy()   # start with keys and values of x
+                    z.update(y)    # modifies z with keys and values of y
+                    return z
 
-            def merge_two_dicts(x, y):
-                z = x.copy()   # start with keys and values of x
-                z.update(y)    # modifies z with keys and values of y
-                return z
+                fixed_rec_bars = float(self.record_length)
+                dict2 = {
+                    'fixed_rec_bars': fixed_rec_bars,
+                    'fixed_rec_bars_half': fixed_rec_bars / 2,
+                    'fixed_rec_bars_half_minus_16': fixed_rec_bars / 2 - fixed_rec_bars / 16,
+                }
 
-            fixed_rec_bars = float(self.record_length)
-            dict2 = {
-                'fixed_rec_bars': fixed_rec_bars,
-                'fixed_rec_bars_half': fixed_rec_bars / 2,
-                'fixed_rec_bars_half_minus_16': fixed_rec_bars / 2 - fixed_rec_bars / 16,
-            }
+                def clip_slot_has_clip_callback():
+                    self.log('HAS CLIP, SO IT STARTED RECORDING')
+                    track.clip_slots[clipslot_index].clip.add_is_recording_listener(post_rec_callback)
+                    track.clip_slots[clipslot_index].remove_has_clip_listener(clip_slot_has_clip_callback)
+                    if track.clip_slots[clipslot_index].clip.is_recording:
+                        # TODO avoid if cancelled
+                        while_rec_actions = '''
+                                ## MIDI CC 2 {switch_index} {rec_color};
+                                ## MIDI CC 6 {switch_index} 6;
+                                ## WAITS {fixed_rec_bars_half}B;
+                                ## MIDI CC 2 {switch_index} {rec_color2};
+                                ## MIDI CC 6 {switch_index} 7;
+                                WAITS {fixed_rec_bars_half_minus_16}B;
+                                record "{channel_name}" {switch_number} autostop;
+                            '''.format(**merge_two_dicts(dictionary, dict2))
+                        self.trigger(while_rec_actions)
+                        self.log(while_rec_actions)
 
-            def clip_slot_has_clip_callback():
-                self.log('HAS CLIP')
-                track.clip_slots[clipslot].clip.add_is_recording_listener(post_rec_callback)
-                track.clip_slots[clipslot].remove_has_clip_listener(clip_slot_has_clip_callback)
-                if track.clip_slots[clipslot].clip.is_recording:
-                    # TODO avoid if cancelled
-                    while_rec_actions = '''
-                            ## MIDI CC 2 {switch_index} {rec_color};
-                            ## MIDI CC 6 {switch_index} 6;
-                            ## WAITS {fixed_rec_bars_half}B;
-                            ## MIDI CC 2 {switch_index} {rec_color2};
-                            ## MIDI CC 6 {switch_index} 7;
-                            ## WAITS {fixed_rec_bars_half_minus_16}B;
-                            ## {track_index}/play {clipslot};
+                def post_rec_callback():
+                    self.log('RECORDING STOPPED')
+                    if not track.clip_slots[clipslot_index].clip.is_recording:
+                        post_rec_actions = '''
+                            WAIT 1;
+                            METRO OFF;
+                            "{channel_name}"/ARM OFF;
                         '''.format(**merge_two_dicts(dictionary, dict2))
-                    self.trigger(while_rec_actions)
-                    self.log(while_rec_actions)
+                        self.trigger(post_rec_actions)
+                        self.log(post_rec_actions)
+                    track.clip_slots[clipslot_index].clip.remove_is_recording_listener(post_rec_callback)
 
-            def post_rec_callback():
-                self.log('RECORDING STOPPED')
-                if not track.clip_slots[clipslot].clip.is_recording:
-                    post_rec_actions = '''
-                        ## set_last_clip_for_switch "{channel_name}" {switch_number} "{clipslot}";
-                        ## MIDI CC 2 {switch_index} {original_color};
-                        ## MIDI CC 6 {switch_index} 0;
-                        WAITS 1;
-                        METRO OFF;
-                        "{channel_name}"/ARM OFF;
-                    '''.format(**merge_two_dicts(dictionary, dict2))
-                    self.trigger(post_rec_actions)
-                    self.log(post_rec_actions)
-                else:
-                    post_rec_actions = '''
-                        ## MIDI CC 2 {switch_index} {original_color};
-                        ## MIDI CC 6 {switch_index} 0;
-                    '''.format(**merge_two_dicts(dictionary, dict2))
-                    self.trigger(post_rec_actions)
-                    self.log(post_rec_actions)
-                track.clip_slots[clipslot].clip.remove_is_recording_listener(post_rec_callback)
+                track.clip_slots[clipslot_index].add_has_clip_listener(clip_slot_has_clip_callback)
 
-            # track.clip_slots[clipslot].add_has_clip_listener(clip_slot_has_clip_callback)
-
-            self.trigger(actions)
+                self.trigger(actions)
         except BaseException as e:
-            self.canonical_parent.log_message('ERROR: ' + str(e))
-
-    def set_last_clip_for_switch(self, action_def, args):
-        try:
-            self.log('set_last_clip_for_switch')
-            args = args.split('"')
-            channel_name = args[1].strip()
-            switch_number = int(args[2])
-            clipslot = int(args[3])
-            self.last_clip_by_channel[channel_name] = {}
-            self.last_clip_by_channel[channel_name][str(switch_number)] = clipslot
-        except BaseException as e:
-            self.log('ERROR: ' + str(e))
+            self.canonical_parent.log_message('ERROR: record ' + str(e))
 
     def mf_change_bank(self, action_def, args):
         try:
