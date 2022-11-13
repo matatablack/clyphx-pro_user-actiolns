@@ -11,167 +11,75 @@ modes = {
     "instrument_control_1": {
         "channels": {
             "Omni 1 [MIDI]": {
-                "encoders": [1, 5],
-                "lights_status": {
-                    "5": "",
-                    "1": ""
-                }
+                "encoders": [1, 5]
             },
             "Omni 1": {
-                "encoders": [9, 13],
-                "lights_status": {
-                    "13": "",
-                    "9": ""
-                }
+                "encoders": [9, 13]
             },
             "V. Bass [MIDI]": {
-                "encoders": [2, 6],
-                "lights_status": {
-                    "6": "",
-                    "2": ""
-                }
+                "encoders": [2, 6]
             },
             "V. Bass": {
-                "encoders": [10, 14],
-                "lights_status": {
-                    "14": "",
-                    "10": ""
-                }
+                "encoders": [10, 14]
             },
             "SH01A [MIDI]": {
-                "encoders": [3, 7],
-                "lights_status": {
-                    "7": "",
-                    "3": ""
-                }
+                "encoders": [3, 7]
             },
             "SH01A": {
-                "encoders": [11, 15],
-                "lights_status": {
-                    "15": "",
-                    "11": ""
-                }
+                "encoders": [11, 15]
             },
             "TB3 [MIDI]": {
-                "encoders": [4, 8],
-                "lights_status": {
-                    "8": "",
-                    "4": ""
-                }
+                "encoders": [4, 8]
             },
             "TB3": {
-                "encoders": [12, 16],
-                "lights_status": {
-                    "16": "",
-                    "12": ""
-                }
+                "encoders": [12, 16]
             }
         }
     },
     "instrument_control_2": {
         "channels": {
             "Grandmother [MIDI]": {
-                "encoders": [1, 5],
-                "lights_status": {
-                    "5": "",
-                    "1": ""
-                }
+                "encoders": [1, 5]
             },
             "Grandmother": {
-                "encoders": [9, 13],
-                "lights_status": {
-                    "13": "",
-                    "9": ""
-                }
+                "encoders": [9, 13]
             },
             "Deepmind": {
-                "encoders": [2, 6],
-                "lights_status": {
-                    "6": "",
-                    "2": ""
-                }
+                "encoders": [2, 6]
             },
             "Deepmind [MIDI]": {
-                "encoders": [10, 14],
-                "lights_status": {
-                    "14": "",
-                    "10": ""
-                }
+                "encoders": [10, 14]
             },
             "GTR VOX": {
-                "encoders": [4, 8, 12, 16],
-                "lights_status": {
-                    "4": "",
-                    "8": "",
-                    "12": "",
-                    "16": ""
-                }
+                "encoders": [4, 8, 12, 16]
             },
             "Omni 2 [MIDI]": {
-                "encoders": [3, 7],
-                "lights_status": {
-                    "7": "",
-                    "3": ""
-                }
+                "encoders": [3, 7]
             },
             "Omni 2": {
-                "encoders": [11, 15],
-                "lights_status": {
-                    "15": "",
-                    "11": ""
-                }
+                "encoders": [11, 15]
             }
         }
     },
     "instrument_control_3": {
         "channels": {
             "BASS COMP": {
-                "encoders": [1, 5, 9, 13],
-                "lights_status": {
-                    "13": "",
-                    "9": "",
-                    "5": "",
-                    "1": ""
-
-
-                }
+                "encoders": [1, 5, 9, 13]
             },
             "Yamaha [MIDI]": {
-                "encoders": [2, 6],
-                "lights_status": {
-                    "6": "",
-                    "2": ""
-                }
+                "encoders": [2, 6]
             },
             "Yamaha": {
-                "encoders": [10, 14],
-                "lights_status": {
-                    "14": "",
-                    "10": ""
-                }
+                "encoders": [10, 14]
             },
             "GTR Acus": {
-                "encoders": [4, 8, 12, 16],
-                "lights_status": {
-                    "16": "",
-                    "12": "",
-                    "8": "",
-                    "4": ""
-                }
+                "encoders": [4, 8, 12, 16]
             },
             "Omni 3 [MIDI]": {
-                "encoders": [3, 7],
-                "lights_status": {
-                    "7": "",
-                    "3": ""
-                }
+                "encoders": [3, 7]
             },
             "Omni 3": {
-                "encoders": [11, 15],
-                "lights_status": {
-                    "15": "",
-                    "11": ""
-                }
+                "encoders": [11, 15]
             }
         }
     }
@@ -195,7 +103,6 @@ class MidiFighterActions(UserActionsBase):
         self.add_global_action('mf_finish_execution', self.finish_execution)
         self.add_global_action('mf_change_bank', self.mf_change_bank)
         self.add_global_action('mf_populate', self.populate_last_clip_by_channel)
-        self.add_global_action('execute_mf_lights_actions', self.execute_mf_lights_actions)
 
     is_execution_blocked = False
     current_action = None
@@ -230,27 +137,6 @@ class MidiFighterActions(UserActionsBase):
     current_control_mode_name = ""
     prev_current_control_mode_name = ""
     mf_shift_switches = False
-
-    def execute_mf_lights_actions(self, action_def, args):
-        self.start_action('execute_mf_lights_actions', "")
-        try:
-            result = ""
-            for channel_name in list(modes[self.current_control_mode_name]["channels"].keys()):
-                channel_obj = modes[self.current_control_mode_name]["channels"][channel_name]
-                self.log('CHANNEL %s' % channel_name)
-                for enc_pos in channel_obj['encoders']:
-                    self.log('enc_pos %s' % enc_pos)
-                    lights = channel_obj['lights_status']
-                    self.log(str(lights))
-                    action = lights[str(enc_pos)]
-                    self.log('action %s' % action);
-                    if action: 
-                        self.log("TRIGGGGERRRRR");
-                        self.trigger(action);
-
-            # self.trigger(result);
-        except BaseException as e:
-            self.canonical_parent.log_message('ERROR execute_mf_lights_actions: ' + str(e))
 
     def set_mf_binding(self, action_def, args):
         try:
@@ -335,80 +221,70 @@ class MidiFighterActions(UserActionsBase):
 
             tracklist = list(self.song().tracks)
 
-            def get_track_by_name(name):
-                try:
-                    for t in tracklist:
-                        if t.name == name:
-                            return t
-                except BaseException as e:
-                    self.canonical_parent.log_message('ERROR: get_track_by_name' + str(e))
-
             def get_clip_playing_status_callback(trackname, track_index, clipslot_index, key, original_color):
                 self.log('registering clip_playing_status_callback for %s %s %s ' % (track_index, trackname, clipslot_index))
                 def clip_playing_status_callback():
-                    track = get_track_by_name(trackname)
-                    # if track.clip_slots[clipslot_index].has_clip:
-                    #     clip = track.clip_slots[clipslot_index].clip
-                    #     switch_position = get_switch_position_by_track_name(trackname, clipslot_index)
-                    #     b = ""
-                    #     a = ""
-                    #     c = ""
-                    #     if clip.is_recording:
-                    #         self.log('IS RECORDING %s %s %s' % (track_index, trackname, clipslot_index))
-                    #         b = rgb_brightness(switch_position, 100)
-                    #         a = rgb_pulse(switch_position, 4)
-                    #         c = color(switch_position, 83)
-                    #     elif clip.is_playing:
-                    #         self.log('IS PLAYINGGGG %s %s %s' % (track_index, trackname, clipslot_index))
-                    #         b = rgb_brightness(switch_position, 90)
-                    #         a = rgb_pulse(switch_position, 6)
-                    #         c = color(switch_position, original_color)
-                    #     else:
-                    #         self.log('IS STOPPED %s %s %s' % (track_index, trackname, clipslot_index))
-                    #         b = rgb_brightness(switch_position, 35)
-                    #         a = rgb_pulse(switch_position, 0)
-                    #         c = color(switch_position, original_color)
-
-                    #     lights_status_action = b + a + c
-                    #     if is_track_visible_in_current_mode(trackname):
-                    #         self.trigger(lights_status_action)
-                    #     try:
-                    #         modes[self.current_control_mode_name]['channels'][trackname]['lights_status'][str(switch_position)] = lights_status_action
-                    #     except BaseException as e:
-                    #         self.canonical_parent.log_message('ERROR clip_playing_status_callback: ' + str(e))
+                    if tracklist[track_index].clip_slots[clipslot_index].has_clip:
+                        clip = tracklist[track_index].clip_slots[clipslot_index].clip
+                        switch_position = get_switch_position_by_track_name(trackname, clipslot_index)
+                        b = ""
+                        a = ""
+                        c = ""
+                        if clip.is_recording:
+                            self.log('IS RECORDING %s %s %s' % (track_index, trackname, clipslot_index))
+                            b = rgb_brightness(switch_position, 100)
+                            a = rgb_strobe(switch_position, 6)
+                            c = color(switch_position, 83)
+                        elif clip.is_playing:
+                            self.log('IS PLAYINGGGG %s %s %s' % (track_index, trackname, clipslot_index))
+                            b = rgb_brightness(switch_position, 100)
+                            a = rgb_pulse(switch_position, 7)
+                            c = color(switch_position, original_color)
+                        else:
+                            self.log('IS STOPPED %s %s %s' % (track_index, trackname, clipslot_index))
+                            # a = rgb_strobe(switch_position, 6)
+                            # c = color(switch_position, 13)
+                            # b = rgb_brightness(switch_position, 30)
+                            a = rgb_strobe(switch_position, 0)
+                            c = color(switch_position, original_color)
+                            b = rgb_brightness(switch_position, 100)
+                        lights_status_action = a + c
+                        if is_track_visible_in_current_mode(trackname):
+                            self.trigger(lights_status_action)
+                            self.trigger(b)
                 return clip_playing_status_callback
 
             def get_clip_slot_has_clip_callback(trackname, track_index, clipslot_index, key, original_color):
                 self.log('registering clip_slot_has_clip for %s %s %s ' % (track_index, trackname, clipslot_index))
                 def clip_slot_has_clip_callback():
-                    clipslot = get_track_by_name(trackname).clip_slots[clipslot_index]
+                    clipslot = tracklist[track_index].clip_slots[clipslot_index]
                     switch_position = get_switch_position_by_track_name(trackname, clipslot_index)
-
                     b = ""
                     a = ""
                     c = ""
                     if clipslot.has_clip:
                         self.log('HAS CLIP %s %s %s' % (track_index, trackname, clipslot_index))
-                        if is_track_visible_in_current_mode(trackname):
-                            self.log(switch_position)
-                            b = rgb_brightness(switch_position, 100)
-                        else:
-                            self.log('Updated track not visible in current mode')
+
+                        if self.mf_clips_playing_status_callbacks.get(key) and clipslot.clip.playing_status_has_listener(self.mf_clips_playing_status_callbacks[key]):
+                            self.log('clip_slot_has_clip_callback: remove_playing_status_listener %s' % key)
+                            clipslot.clip.remove_playing_status_listener(self.mf_clips_playing_status_callbacks[key])
+                            del self.mf_clips_playing_status_callbacks[key]
+
+                        new_playing_status = get_clip_playing_status_callback(trackname, track_index, clipslot_index, key, original_color)
+                        clipslot.clip.add_playing_status_listener(new_playing_status)
+                        self.mf_clips_playing_status_callbacks[key] = new_playing_status
+                        new_playing_status()
 
                     else:
-                        self.log('NO CLIP %s' % trackname)
-                        b = rgb_brightness(switch_position, 60)
+                        self.log('NO CLIP return to original color %s' % trackname)
+                        b = rgb_brightness(switch_position, 30)
                         a = rgb_strobe(switch_position, 0)
                         c = color(switch_position, original_color)
                     
-                    lights_status_action = b + a + c
+                    lights_status_action = a + c
                     if is_track_visible_in_current_mode(trackname):
                         self.trigger(lights_status_action)
-                    self.log(lights_status_action)
-                    try:
-                        modes[self.current_control_mode_name]['channels'][trackname]['lights_status'][str(switch_position)] = lights_status_action
-                    except BaseException as e:
-                        self.canonical_parent.log_message('ERROR clip_slot_has_clip_callback: ' + str(e))
+                        self.trigger(b)
 
                 return clip_slot_has_clip_callback
 
@@ -420,30 +296,47 @@ class MidiFighterActions(UserActionsBase):
                     a = ""
                     c = ""
                     if clipslot.is_triggered:
-                        if clipslot.will_record_on_start:
-                            self.log(' %s %s IS EMPTY ABOUT TO RECORD' % (trackname, clipslot_index))
-                            b = rgb_brightness(switch_position, 80)
-                            a = rgb_strobe(switch_position, 6)
-                            c = color(switch_position, 80)
-
+                        self.log(' %s %s IS TRIGGERED' % (trackname, clipslot_index))
                         if clipslot.has_clip:
-                            self.log(' %s %s HAS CLIP' % (trackname, clipslot_index))
-                            b = rgb_brightness(switch_position, 100)
-                            a = rgb_pulse(switch_position, 5)
-                            c = color(switch_position, 42)
+                            self.log(' AND HAS CLIP')
+                            if clipslot.will_record_on_start:
+                                self.log(' AND ITS ABOUT TO RECORD')
+                                b = rgb_brightness(switch_position, 100)
+                                a = rgb_strobe(switch_position, 8)
+                                c = color(switch_position, 75)
+                            else:
+                                self.log(' ITS RETTRIGERING EXISTING CLIP, GREEN')
+                                b = rgb_brightness(switch_position, 100)
+                                a = rgb_pulse(switch_position, 7)
+                                c = color(switch_position, 44)
                         else:
-                            self.log(' %s %s ABOUT TO START PLAYING or stop' % (trackname, clipslot_index))
-                            b = rgb_brightness(switch_position, 80)
-                            a = rgb_pulse(switch_position, 5)
-                            c = color(switch_position, original_color)
+                            if clipslot.will_record_on_start:    
+                                self.log(' %s %s ITS ABOUT TO RECORD' % (trackname, clipslot_index))
+                                b = rgb_brightness(switch_position, 100)
+                                a = rgb_strobe(switch_position, 8)
+                                c = color(switch_position, 75)
+                    else:
+                        self.log(' %s %s IS NOT TRIGGERED ANYMORE' % (trackname, clipslot_index))
+                        if clipslot.clip:
+                            if clipslot.clip.is_recording:
+                                self.log('is_triggered IS RECORDING %s %s %s' % (track_index, trackname, clipslot_index))
+                                b = rgb_brightness(switch_position, 100)
+                                a = rgb_strobe(switch_position, 6)
+                                c = color(switch_position, 83)
+                            elif clipslot.clip.is_playing:
+                                self.log('is_triggered IS PLAYINGGGG %s %s %s' % (track_index, trackname, clipslot_index))
+                                b = rgb_brightness(switch_position, 100)
+                                a = rgb_pulse(switch_position, 7)
+                                c = color(switch_position, original_color)
+                            else:
+                                self.log('is_triggered IS STOPPED %s %s %s' % (track_index, trackname, clipslot_index))
+                                b = rgb_brightness(switch_position, 100)
+                                a = rgb_strobe(switch_position, 0)
+                                c = color(switch_position, original_color)
                     lights_status_action = b + a + c
                     if is_track_visible_in_current_mode(trackname):
                             self.trigger(lights_status_action)
                     self.log(lights_status_action)
-                    try:
-                        modes[self.current_control_mode_name]['channels'][trackname]['lights_status'][str(switch_position)] = lights_status_action
-                    except BaseException as e:
-                        self.canonical_parent.log_message('ERROR clip_slot_is_triggered : ' + str(e))
                 return clip_slot_is_triggered
                                 
 
@@ -483,23 +376,18 @@ class MidiFighterActions(UserActionsBase):
                             key = name + index
 
                             switch_number = get_switch_position_by_track_name(t.name, clipslot_index)
-                            self.trigger('set_last_clip_for_switch "%s" %s"%s";' % (t.name, switch_number - 1, clipslot_index + 1))
+                            self.trigger('set_last_clip_for_switch "%s" %s"%s";' % (t.name, switch_number - 1, clipslot_index))
                             
-                            new_has_clip_callback = get_clip_slot_has_clip_callback(t.name, tracklist.index(t), clipslot_index, key, original_color)
-                            clipslot.add_has_clip_listener(new_has_clip_callback)
-                            self.mf_clipslots_has_clip_callbacks[key] = new_has_clip_callback
-                            new_has_clip_callback()
 
                             new_is_triggered_callback = get_clip_slot_is_triggered(t.name, tracklist.index(t), clipslot_index, key, original_color)
                             clipslot.add_is_triggered_listener(new_is_triggered_callback)
                             self.mf_clipslots_is_triggered_clip_callbacks[key] = new_is_triggered_callback
                             new_is_triggered_callback()
 
-                            if clipslot.has_clip:
-                                new_playing_status = get_clip_playing_status_callback(t.name, tracklist.index(t), clipslot_index, key, original_color)
-                                clipslot.clip.add_playing_status_listener(new_playing_status)
-                                self.mf_clips_playing_status_callbacks[key] = new_playing_status
-                                new_playing_status()
+                            new_has_clip_callback = get_clip_slot_has_clip_callback(t.name, tracklist.index(t), clipslot_index, key, original_color)
+                            clipslot.add_has_clip_listener(new_has_clip_callback)
+                            self.mf_clipslots_has_clip_callbacks[key] = new_has_clip_callback
+                            new_has_clip_callback()
 
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: populate_last_clip_by_channel ' + str(e))
@@ -549,7 +437,7 @@ class MidiFighterActions(UserActionsBase):
             cliplist = list(track.clip_slots)
 
             try:
-                channel_switches = self.last_clip_by_channel[str(channel_name)] if self.last_clip_by_channel[str(channel_name)] else None
+                channel_switches = self.last_clip_by_channel[str(channel_name)] if self.last_clip_by_channel.get(str(channel_name)) else None
                 clipslot = channel_switches[str(switch_number)] if channel_switches else None
                 self.log("ACTIVE CLIPSLOT FOR SWITCH: %s " % str(clipslot))
                 if track.clip_slots[int(clipslot) - 1].has_clip:

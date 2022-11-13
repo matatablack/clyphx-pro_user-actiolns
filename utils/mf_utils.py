@@ -7,11 +7,13 @@ def rgb_brightness(enc, val):
 
 
 def rgb_pulse(enc, val):
-    return "MIDI CC 6 %s %s;" % (int(enc) - 1, val + 8)
+    v = 0 if val == 0 else 8 + val
+    return "MIDI CC 6 %s %s;" % (int(enc) - 1, v)
 
 
 def rgb_strobe(enc, val):
-    return "MIDI CC 6 %s %s;" % (int(enc) - 1, val)
+    v = 0 if val == 0 else val
+    return "MIDI CC 6 %s %s;" % (int(enc) - 1, v)
 
 
 def rgb_animation_off(enc):
@@ -23,11 +25,13 @@ def ind_brightness(enc, val):
 
 
 def ind_pulse(enc, val):
-    return "MIDI CC 3 %s %s;" % (int(enc) - 1, 56 + val)
+    v = 0 if val == 0 else 56 + val
+    return "MIDI CC 3 %s %s;" % (int(enc) - 1, v)
 
 
 def ind_strobe(enc, val):
-    return "MIDI CC 3 %s %s;" % (int(enc) - 1, 48 + val)
+    v = 0 if val == 0 else 48 + val
+    return "MIDI CC 3 %s %s;" % (int(enc) - 1, v)
 
 
 def ind_animation_off(enc):
