@@ -8,6 +8,34 @@ from utils.mf_utils import rgb_brightness, color, rgb_pulse, rgb_strobe, ind_bri
 NUM_X_CONTROLS = 34
 
 modes = {
+    "instrument_control_0": {
+        "channels": {
+            "Kick [MIDI]": {
+                "encoders": [1, 5]
+            },
+            "Kick": {
+                "encoders": [9, 13]
+            },
+            "Minitaur [MIDI]": {
+                "encoders": [2, 6]
+            },
+            "Minitaur": {
+                "encoders": [10, 14]
+            },
+            "Drums [MIDI]": {
+                "encoders": [3, 7]
+            },
+            "Drums": {
+                "encoders": [11, 15]
+            },
+            "Omni 4 [MIDI]": {
+                "encoders": [4, 8]
+            },
+            "Omni 4": {
+                "encoders": [12, 16]
+            },
+        }
+    },
     "instrument_control_1": {
         "channels": {
             "Omni 1 [MIDI]": {
@@ -83,6 +111,7 @@ modes = {
             }
         }
     }
+
 }
 
 all_modes = list(modes.keys())

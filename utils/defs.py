@@ -325,25 +325,25 @@ instrument_control_3_bank2 = """
 
 
 master_fx_and_sends = """ 
-    bind mf_b1_e1 "A-Send A"/DEV(1) P1;
-    bind mf_b1_e2 "A-Send A"/DEV(1) P2;
-    bind mf_b1_e5 "A-Send A"/DEV(1) P3;
-    bind mf_b1_e6 "A-Send A"/DEV(1) P4;
+    bind mf_b1_e1 "A-Send A"/DEV(2) P1;
+    bind mf_b1_e2 "A-Send A"/DEV(2) P2;
+    bind mf_b1_e5 "A-Send A"/DEV(2) P3;
+    bind mf_b1_e6 "A-Send A"/DEV(2) P4;
 
-    bind mf_b1_e3 "B-Send B"/DEV(1) P1;
-    bind mf_b1_e4 "B-Send B"/DEV(1) P2;
-    bind mf_b1_e7 "B-Send B"/DEV(1) P3;
-    bind mf_b1_e8 "B-Send B"/DEV(1) P4;
+    bind mf_b1_e3 "B-Send B"/DEV(2) P1;
+    bind mf_b1_e4 "B-Send B"/DEV(2) P2;
+    bind mf_b1_e7 "B-Send B"/DEV(2) P3;
+    bind mf_b1_e8 "B-Send B"/DEV(2) P4;
     
-    bind mf_b1_e9 "C-Send C"/DEV(1) P1;
-    bind mf_b1_e10 "C-Send C"/DEV(1) P2;
-    bind mf_b1_e11 "C-Send C"/DEV(1) P3;
-    bind mf_b1_e12 "C-Send C"/DEV(1) P4;
+    bind mf_b1_e9 "C-Send C"/DEV(2) P1;
+    bind mf_b1_e10 "C-Send C"/DEV(2) P2;
+    bind mf_b1_e11 "C-Send C"/DEV(2) P3;
+    bind mf_b1_e12 "C-Send C"/DEV(2) P4;
 
-    bind mf_b1_e13 "Master"/DEV("FX") P1;
-    bind mf_b1_e14 "Master"/DEV("FX") P2;
-    bind mf_b1_e15 "Master"/DEV("FX") P3;
-    bind mf_b1_e16 "Master"/DEV("FX") P4;
+    bind mf_b1_e13 "Master"/DEV(2) P1;
+    bind mf_b1_e14 "Master"/DEV(2) P2;
+    bind mf_b1_e15 "Master"/DEV(2) P3;
+    bind mf_b1_e16 "Master"/DEV(2) P4;
  """
 
 live_1 = """ 
