@@ -72,10 +72,10 @@ modes = {
             "Grandmother": {
                 "encoders": [9, 13]
             },
-            "Deepmind": {
+            "Deepmind [MIDI]": {
                 "encoders": [2, 6]
             },
-            "Deepmind [MIDI]": {
+            "Deepmind": {
                 "encoders": [10, 14]
             },
             "GTR VOX": {
@@ -110,6 +110,47 @@ modes = {
                 "encoders": [11, 15]
             }
         }
+    },
+    "master_fx_and_sends": {
+        "channels": {
+            "A-Send A": {
+                "encoders": [1, 5, 9, 13]
+            },
+            "B-Send B": {
+                "encoders": [2, 6, 10, 14]
+            },
+            "C-Send C": {
+                "encoders": [3, 7, 11, 15]
+            },
+            "Master": {
+                "encoders": [4, 8, 12, 16]
+            }
+        }
+    },
+    "live_1": {
+        "channels": {
+            "Drums [MIDI]": {
+                "encoders": [1, 5]
+            },
+            "Drums": {
+                "encoders": [9, 13]
+            },
+            "Yamaha [MIDI]": {
+                "encoders": [2, 6]
+            },
+            "Yamaha": {
+                "encoders": [10, 14]
+            },
+            "Omni 1 [MIDI]": {
+                "encoders": [3, 7],
+            },
+            "Omni 1": {
+                "encoders": [11, 15]
+            },
+            "GTR VOX": {
+                "encoders": [4, 8, 12, 16]
+            },
+        }
     }
 
 }
@@ -119,6 +160,7 @@ all_channels = []
 for mode_key in all_modes:
     all_mode_channels = list(modes[mode_key]['channels'].keys())
     all_channels = all_channels + all_mode_channels
+
 
 class MidiFighterActions(UserActionsBase):
 
@@ -167,7 +209,7 @@ class MidiFighterActions(UserActionsBase):
 
     def set_mf_binding(self, action_def, args):
         try:
-            self.start_action('set_binding', args)
+            self.start_action('set_mf_binding', args, True)
             args = args.split()
             control_mode_name = args[0]
             bank_number = str(args[1]) if len(args) > 1 else ""
@@ -191,11 +233,7 @@ class MidiFighterActions(UserActionsBase):
 
             if control_modes_defs[mode_name]:
                 self.trigger(control_modes_defs[mode_name]["binding"])
-                self.set_color_schema(control_modes_defs[mode_name]["color_schema"])
-
-            self.log(' !!!!!!!!!!!!!!! populate_last_clip_by_channel !!!!!!!!!!!!!!!')
-            # self.execute_mf_lights_actions(None, "")
-            self.populate_last_clip_by_channel(None, "")
+                # self.set_color_schema(control_modes_defs[mode_name]["color_schema"])
 
             self.log('ASSIGNING MACROS for %s' % mode_name)
 
@@ -205,6 +243,9 @@ class MidiFighterActions(UserActionsBase):
                 # self.log(res)
                 self.trigger(res, False)
             self.trigger("mf_finish_execution;")
+
+            self.log(' !!!!!!!!!!!!!!! populate_last_clip_by_channel !!!!!!!!!!!!!!!')
+            self.populate_last_clip_by_channel(None, "")
         except BaseException as e:
             self.log('ERROR set_mf_binding: ' + str(e))
 
@@ -235,10 +276,11 @@ class MidiFighterActions(UserActionsBase):
 
     def populate_last_clip_by_channel(self, action_def, args):
         try:
-            self.start_action('populate_last_clip_by_channel', args)
+            self.start_action('populate_last_clip_by_channel', args, True)
 
             def is_track_visible_in_current_mode(track_name):
                 return True if modes[self.current_control_mode_name]['channels'] and modes[self.current_control_mode_name]['channels'][str(track_name)] else False
+
             def get_switch_position_by_track_name(track_name, clipslot):
                 try:
                     position = modes[self.current_control_mode_name]['channels'][str(track_name)]['encoders'][clipslot]
@@ -250,6 +292,7 @@ class MidiFighterActions(UserActionsBase):
 
             def get_clip_playing_status_callback(trackname, track_index, clipslot_index, key, original_color):
                 self.log('registering clip_playing_status_callback for %s %s %s ' % (track_index, trackname, clipslot_index))
+
                 def clip_playing_status_callback():
                     if tracklist[track_index].clip_slots[clipslot_index].has_clip:
                         clip = tracklist[track_index].clip_slots[clipslot_index].clip
@@ -283,6 +326,7 @@ class MidiFighterActions(UserActionsBase):
 
             def get_clip_slot_has_clip_callback(trackname, track_index, clipslot_index, key, original_color):
                 self.log('registering clip_slot_has_clip for %s %s %s ' % (track_index, trackname, clipslot_index))
+
                 def clip_slot_has_clip_callback():
                     clipslot = tracklist[track_index].clip_slots[clipslot_index]
                     switch_position = get_switch_position_by_track_name(trackname, clipslot_index)
@@ -305,7 +349,7 @@ class MidiFighterActions(UserActionsBase):
 
                         else:
                             self.log('NO CLIP return to original color %s' % trackname)
-                            b = rgb_brightness(switch_position, 15)
+                            b = rgb_brightness(switch_position, 25)
                             # a = rgb_strobe(switch_position, 0)
                             c = color(switch_position, original_color)
 
@@ -378,13 +422,46 @@ class MidiFighterActions(UserActionsBase):
                         #     b = rgb_brightness(switch_position, 15)
                         #     c = color(switch_position, original_color)
                 return clip_slot_is_triggered
+                
+
+            for rt in self.song().return_tracks:
+                self.log(rt.name);
+                if rt.name in list(modes.get(self.current_control_mode_name).get('channels').keys()):
+                    original_color = colors_by_name[str(rt.name.split("[MIDI]")[0].strip())]["default"]
+                    self.log('TRACK NAME ---> %s' % rt.name)
+                    self.log('TRACK CAN BE ARMED ---> %s' % rt.can_be_armed)
+                    try:
+                        encoders = modes[self.current_control_mode_name]['channels'][str(rt.name)]['encoders']
+
+                        result = ""
+                        for switch_position in encoders:
+                            b = rgb_brightness(switch_position, 25)
+                            c = color(switch_position, original_color)
+                            result = result + b + c
+                        if is_track_visible_in_current_mode(rt.name):
+                            self.trigger(result)
+                    except BaseException as e:
+                        self.canonical_parent.log_message('ERROR return tracks coloring ' + str(e))
+
+            try:
+                master_track_name = "Master"
+                if is_track_visible_in_current_mode(master_track_name):
+                    master_track_encoders = modes[self.current_control_mode_name]['channels'][master_track_name]['encoders']
+                    master_track_colors_action = ""
+                    for switch_position in master_track_encoders:
+                        b = rgb_brightness(switch_position, 25)
+                        c = color(switch_position, original_color)
+                        master_track_colors_action = master_track_colors_action + b + c
+                        self.trigger(master_track_colors_action)
+            except BaseException as e:
+                    self.canonical_parent.log_message('ERROR master_track coloring ' + str(e))
 
 
 
             self.log('CURRENT current_control_mode_name %s' % self.current_control_mode_name)
             if modes.get(self.current_control_mode_name):
                 for t in tracklist:
-                     #remove previous listener if has one
+                    # remove previous listener if has one
                     if self.prev_current_control_mode_name and modes.get(self.prev_current_control_mode_name):
                         if t.name in list(modes[self.prev_current_control_mode_name]['channels'].keys()):
                             self.log('Start Removing listeners for PREV controlled track %s' % t.name)
@@ -406,6 +483,7 @@ class MidiFighterActions(UserActionsBase):
                                     clipslot.clip.remove_playing_status_listener(self.mf_clips_playing_status_callbacks[key])
                                     del self.mf_clips_playing_status_callbacks[key]
 
+
                     if t.name in list(modes[self.current_control_mode_name]['channels'].keys()):
                         self.log('Start Adding listeners to clipslot on track %s' % t.name)
                         original_color = colors_by_name[str(t.name.split("[MIDI]")[0].strip())]["default"]
@@ -424,10 +502,11 @@ class MidiFighterActions(UserActionsBase):
                             clipslot.add_has_clip_listener(new_has_clip_callback)
                             self.mf_clipslots_has_clip_callbacks[key] = new_has_clip_callback
                             new_has_clip_callback()
+            
+            self.trigger('mf_finish_execution;')
 
         except BaseException as e:
             self.canonical_parent.log_message('ERROR: populate_last_clip_by_channel ' + str(e))
-
 
     def record(self, action_def, args):
         try:
@@ -446,12 +525,14 @@ class MidiFighterActions(UserActionsBase):
                     track = t
 
             track_index = tracklist.index(track) + 1
-
-
-
+            
             encoders = list(modes.get(self.current_control_mode_name)['channels'][str(channel_name)]['encoders'])
 
-            clipslot_index = encoders.index(switch_number)
+            self.log('encoders --> ' + str(encoders))
+
+            clipslot_index = encoders.index(int(switch_number))
+
+            self.log('clipslot_index --> ' + str(clipslot_index))
 
             self.log(" ---- ACTIVE CLIPSLOT FOR SWITCH: ---- %s " % str(clipslot_index))
             if track.clip_slots[clipslot_index].has_clip:
@@ -514,6 +595,7 @@ class MidiFighterActions(UserActionsBase):
                                 ## MIDI CC 2 {switch_index} {rec_color2};
                                 ## MIDI CC 6 {switch_index} 7;
                                 WAITS {fixed_rec_bars_half_minus_16}B;
+                                "{channel_name}"/ARM OFF;
                                 record "{channel_name}" {switch_number} autostop;
                             '''.format(**merge_two_dicts(dictionary, dict2))
                         self.trigger(while_rec_actions)
@@ -539,7 +621,8 @@ class MidiFighterActions(UserActionsBase):
 
     def mf_change_bank(self, action_def, args):
         try:
-            self.start_action('change_bank', args)
+            # self.start_action('change_bank', args)
+            self.log("change_bank")
             bank_number = int(args) - 1
             self.trigger('MIDI CC 4 %s 127' % bank_number)
         except BaseException as e:
