@@ -13,6 +13,14 @@ colors_by_name = {
         "default": 67,
         "active": 100,
     },
+    "Drums 1": {
+        "default": 67,
+        "active": 100,
+    },
+    "Drums 2": {
+        "default": 67,
+        "active": 100,
+    },
     "Omni 4": {
         "default": 6,
         "active": 100,
@@ -50,7 +58,23 @@ colors_by_name = {
         "default": 30,
         "active": 100,
     },
+    "GTR VOX 1": {
+        "default": 30,
+        "active": 100,
+    },
+    "GTR VOX 2": {
+        "default": 30,
+        "active": 100,
+    },
     "BASS COMP": {
+        "default": 40,
+        "active": 100,
+    },
+    "BASS COMP 1": {
+        "default": 40,
+        "active": 100,
+    },
+    "BASS COMP 2": {
         "default": 40,
         "active": 100,
     },
@@ -66,6 +90,14 @@ colors_by_name = {
         "default": 71,
         "active": 100,
     },
+    "GTR Acus 1": {
+        "default": 71,
+        "active": 100,
+    },
+    "GTR Acus 2": {
+        "default": 71,
+        "active": 100,
+    },
     "A-Send A": {
         "default": 32,
         "active": 100,
@@ -75,11 +107,11 @@ colors_by_name = {
         "active": 100,
     },
     "C-Send C": {
-        "default": 75,
+        "default": 60,
         "active": 100,
     },
     "Master": {
-        "default": 90,
+        "default": 95,
         "active": 100,
     }
 }

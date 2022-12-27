@@ -16,6 +16,7 @@ class MixerActions(UserActionsBase):
         self.add_global_action('set_target_bus', self.set_target_bus)
         self.add_global_action('left_channel_mono_utility', self.left_channel_mono_utility)
         self.add_global_action('set_mixer_midi_volumes_binding', self.set_mixer_midi_volumes_binding)
+        self.add_global_action('stop_playing', self.stop_playing)
         self.add_global_action('mixer_finish_execution', self.finish_execution)
         self.canonical_parent.log_message("ABLETON PYTHON Current Version: ------>>>>>", sys.version)
 
@@ -690,6 +691,13 @@ class MixerActions(UserActionsBase):
         result = input_tracks_names_and_colors.get(channel)
         self.canonical_parent.log_message(dumpobj(result))
         return result
+
+    def stop_playing(self, action_def, args):
+        try:
+            self.check_thread_avalability_and_block('stop_playing', args)
+            self.song().stop_playing()
+        except BaseException as e:
+            self.canonical_parent.log_message('ERROR: ' + str(e))
 
     def on_track_list_changed(self):
         self.canonical_parent.log_message('Track list changed..')
